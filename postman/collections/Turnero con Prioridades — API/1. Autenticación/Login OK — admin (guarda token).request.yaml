@@ -1,0 +1,22 @@
+$kind: http-request
+description: Cuenta semilla admin / Admin123!. El test guarda el token en la variable {{token}} de la colección.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"admin","password":"Admin123!"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.collectionVariables.set('token', r.token);
+      pm.collectionVariables.set('rol', r.rol);
+      pm.collectionVariables.set('usuarioId', String(r.usuarioId));
+      pm.test('tipoToken es Bearer', () => pm.expect(r.tipoToken).to.eql('Bearer'));
+      pm.test('rol ADMIN', () => pm.expect(r.rol).to.eql('ADMIN'));
+      pm.test('expiracion presente', () => pm.expect(r.expiracion).to.be.a('string'));
+    language: text/javascript
+order: 1000

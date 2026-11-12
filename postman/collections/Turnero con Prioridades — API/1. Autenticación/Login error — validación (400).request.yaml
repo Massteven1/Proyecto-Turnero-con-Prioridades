@@ -1,0 +1,20 @@
+$kind: http-request
+description: username < 3 y password < 8 → 400 con detallesValidacion campo por campo (contrato ErrorResponseDTO).
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"ab","password":"corta"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('detallesValidacion por campo', () => {
+        pm.expect(r.detallesValidacion).to.have.property('username');
+        pm.expect(r.detallesValidacion).to.have.property('password');
+      });
+    language: text/javascript
+order: 5000

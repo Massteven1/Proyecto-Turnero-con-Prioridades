@@ -1,0 +1,22 @@
+$kind: http-request
+description: Contraseña válida en formato pero incorrecta → 401 con ErrorResponseDTO.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"admin","password":"WrongPass123"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized', () => pm.response.to.have.status(401));
+      const r = pm.response.json();
+      pm.test('mensaje Credenciales inválidas', () => pm.expect(r.mensaje).to.eql('Credenciales inválidas'));
+      pm.test('ErrorResponseDTO con ruta y status', () => {
+        pm.expect(r.status).to.eql(401);
+        pm.expect(r.ruta).to.eql('/api/v1/auth/login');
+        pm.expect(r.timestamp).to.be.a('string');
+      });
+    language: text/javascript
+order: 3000

@@ -1,0 +1,11 @@
+$kind: collection
+description: |-
+  Colección de pruebas del backend Spring Boot, construida por fases según docs/ (contrato de endpoints del xlsx).
+
+  Fase 1 — Autenticación JWT: login, errores 400/401 del ErrorResponseDTO y verificación del filtro de revalidación.
+  Las siguientes fases agregan sus endpoints aquí mismo.
+variables:
+  baseUrl: http://localhost:8080
+  token: ""
+  rol: ""
+  usuarioId: ""

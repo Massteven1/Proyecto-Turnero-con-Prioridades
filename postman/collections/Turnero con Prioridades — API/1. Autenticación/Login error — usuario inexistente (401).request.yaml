@@ -1,0 +1,17 @@
+$kind: http-request
+description: "El mensaje de 401 es idéntico al de contraseña incorrecta: la API no revela qué cuentas existen."
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"nadie","password":"Password123"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized', () => pm.response.to.have.status(401));
+      const r = pm.response.json();
+      pm.test('mismo mensaje que credenciales mal (no filtra existencia)', () => pm.expect(r.mensaje).to.eql('Credenciales inválidas'));
+    language: text/javascript
+order: 4000

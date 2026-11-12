@@ -1,0 +1,3 @@
+$kind: collection
+description: Verificación del JWT y del filtro de revalidación de cuenta/rol.
+order: 2000

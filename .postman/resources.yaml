@@ -1,0 +1,7 @@
+cloudResources:
+  collections:
+    ../postman/collections/Turnero con Prioridades — API: 42379717-71eebe24-19ae-429e-a76b-67bee5cca8ee
+  globals:
+    ../postman/globals/workspace.globals.yaml: 0d43332d-7ff8-4ea1-892c-240c068e74e5
+workspace:
+  id: 58a0baac-bca8-4784-8e42-56fb4836935c

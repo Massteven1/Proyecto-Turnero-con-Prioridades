@@ -1,0 +1,17 @@
+$kind: http-request
+name: GET /usuarios con token (verifica JWT)
+description: |-
+  Usa el {{token}} guardado por los logins.
+
+  - 404 = correcto por ahora: el JWT pasó la seguridad y el filtro de revalidación; el endpoint llega en Fase 2a.
+  - Desde Fase 2a este mismo request devuelve 200 con List<UsuarioDTO>.
+  - Si quitás el token manualmente → 401 con ErrorResponseDTO.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('JWT aceptado por el filtro (no 401/403)', () => pm.expect([401, 403]).to.not.include(pm.response.code));
+    language: text/javascript
+order: 1000

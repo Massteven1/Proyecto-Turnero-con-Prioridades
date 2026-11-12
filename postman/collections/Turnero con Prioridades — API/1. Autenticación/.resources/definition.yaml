@@ -1,0 +1,3 @@
+$kind: collection
+description: POST /api/v1/auth/login — ruta pública. Los logins exitosos guardan token/rol/usuarioId en variables de la colección.
+order: 1000
