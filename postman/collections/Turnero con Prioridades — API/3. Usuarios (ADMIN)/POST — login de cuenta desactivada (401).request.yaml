@@ -1,0 +1,17 @@
+$kind: http-request
+description: Una cuenta desactivada no puede autenticarse → 401 con ErrorResponseDTO.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"{{nuevoUsername}}","password":"NuevaClave123*"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized', () => pm.response.to.have.status(401));
+      const r = pm.response.json();
+      pm.test('ruta del ErrorResponseDTO', () => pm.expect(r.ruta).to.eql('/api/v1/auth/login'));
+    language: text/javascript
+order: 6100

@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Misma restricción que la desactivación, pero por cambio de rol: operador1 (turno LLAMADO) no puede pasar a ADMIN → 409.
+  Si este test falla con 200, la regla no se aplica y operador1 queda como ADMIN: corregilo por SQL.
+url: "{{baseUrl}}/api/v1/usuarios/2"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombreCompleto":"Carlos Perez - Cajero 1","password":null,"rol":"ADMIN","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict por turno activo', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje menciona el turno activo', () => pm.expect(r.mensaje).to.match(/turno activo/i));
+    language: text/javascript
+order: 7100

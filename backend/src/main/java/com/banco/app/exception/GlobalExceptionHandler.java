@@ -6,13 +6,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -42,6 +45,34 @@ public class GlobalExceptionHandler {
         ErrorResponseDTO cuerpo = ErrorResponseDTO.de(HttpStatus.BAD_REQUEST,
                 "El cuerpo de la petición no es un JSON válido", request.getRequestURI(), null);
         return ResponseEntity.badRequest().body(cuerpo);
+    }
+
+    // 400: parametro de ruta o query con tipo invalido (ej. /usuarios/abc o ?activo=xyz)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> parametroInvalido(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        ErrorResponseDTO cuerpo = ErrorResponseDTO.de(HttpStatus.BAD_REQUEST,
+                "El parámetro '" + ex.getName() + "' tiene un valor inválido", request.getRequestURI(), null);
+        return ResponseEntity.badRequest().body(cuerpo);
+    }
+
+    // 409: respaldo de las restricciones UNIQUE cuando una carrera esquiva la
+    // validacion previa del servicio (ej. uk_usuarios_username en un POST simultaneo)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> conflictoBD(DataIntegrityViolationException ex, HttpServletRequest request) {
+        LOG.warn("Conflicto de integridad en {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        ErrorResponseDTO cuerpo = ErrorResponseDTO.de(HttpStatus.CONFLICT,
+                "La operación entra en conflicto con una restricción de la base de datos", request.getRequestURI(), null);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(cuerpo);
+    }
+
+    // 403: @PreAuthorize rechaza la invocacion dentro del DispatcherServlet,
+    // asi que la AccessDeniedException llega a este advice antes que al
+    // AccessDeniedHandler del filtro de seguridad (que cubre solo la cadena).
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> accesoDenegado(AccessDeniedException ex, HttpServletRequest request) {
+        ErrorResponseDTO cuerpo = ErrorResponseDTO.de(HttpStatus.FORBIDDEN,
+                "La cuenta no tiene permisos para este recurso", request.getRequestURI(), null);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(cuerpo);
     }
 
     // Errores de negocio lanzados por los servicios con ResponseStatusException

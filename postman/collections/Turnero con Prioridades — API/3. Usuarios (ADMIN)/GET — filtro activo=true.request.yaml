@@ -1,0 +1,17 @@
+$kind: http-request
+description: Query param opcional activo=true|false. Con true solo devuelve cuentas con activo=true.
+url: "{{baseUrl}}/api/v1/usuarios?activo=true"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('todas las cuentas están activas', () => {
+        pm.expect(r).to.be.an('array');
+        r.forEach(u => pm.expect(u.activo).to.eql(true));
+      });
+    language: text/javascript
+order: 2000

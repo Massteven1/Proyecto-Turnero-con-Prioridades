@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  PUT del usuario creado: cambia nombreCompleto y contraseña. El username no viaja (es inmutable).
+  password null u omitido conservaría el hash actual; acá se envía uno nuevo a propósito.
+url: "{{baseUrl}}/api/v1/usuarios/{{usuarioCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombreCompleto":"Usuario Prueba Actualizado","password":"NuevaClave123*","rol":"OPERADOR","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre actualizado', () => pm.expect(r.nombreCompleto).to.eql('Usuario Prueba Actualizado'));
+      pm.test('username inmutable', () => pm.expect(r.username).to.eql(pm.collectionVariables.get('nuevoUsername')));
+      pm.test('sin passwordHash en la respuesta', () => pm.expect(r).to.not.have.property('passwordHash'));
+    language: text/javascript
+order: 5000

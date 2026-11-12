@@ -3,9 +3,13 @@ description: |-
   Colección de pruebas del backend Spring Boot, construida por fases según docs/ (contrato de endpoints del xlsx).
 
   Fase 1 — Autenticación JWT: login, errores 400/401 del ErrorResponseDTO y verificación del filtro de revalidación.
+  Fase 2a — Usuarios (ADMIN): CRUD, filtros, BCrypt, 409 por turno activo y por último ADMIN, 403 por rol.
   Las siguientes fases agregan sus endpoints aquí mismo.
 variables:
   baseUrl: http://localhost:8080
   token: ""
   rol: ""
   usuarioId: ""
+  tokenOperador: ""
+  usuarioCreadoId: ""
+  nuevoUsername: ""

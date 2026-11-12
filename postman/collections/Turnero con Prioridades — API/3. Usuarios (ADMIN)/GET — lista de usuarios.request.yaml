@@ -1,0 +1,35 @@
+$kind: http-request
+description: |-
+  Lista completa ordenada por id ASC.
+
+  Verifica que el DTO nunca exponga passwordHash y que la forma sea la del catálogo.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('es un array de usuarios', () => {
+        pm.expect(r).to.be.an('array');
+        pm.expect(r.length).to.be.at.least(3);
+      });
+      pm.test('passwordHash nunca sale por el API', () => {
+        r.forEach(u => {
+          pm.expect(u).to.not.have.property('passwordHash');
+          pm.expect(u).to.not.have.property('password');
+        });
+      });
+      pm.test('campos del UsuarioDTO', () => {
+        r.forEach(u => {
+          pm.expect(u).to.have.all.keys('id', 'username', 'nombreCompleto', 'rol', 'activo');
+        });
+      });
+      pm.test('orden ascendente por id', () => {
+        const ids = r.map(u => u.id);
+        pm.expect(ids).to.eql([...ids].sort((a, b) => a - b));
+      });
+    language: text/javascript
+order: 1000

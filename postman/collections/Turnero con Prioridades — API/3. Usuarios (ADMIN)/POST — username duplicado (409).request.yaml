@@ -1,0 +1,19 @@
+$kind: http-request
+description: Usa el username de la semilla (admin), que siempre existe → 409 sin crear nada.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"admin","nombreCompleto":"Duplicado de Prueba","password":"Prueba123*","rol":"OPERADOR"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje de username registrado', () => pm.expect(r.mensaje).to.match(/username/i));
+      pm.test('ruta del ErrorResponseDTO', () => pm.expect(r.ruta).to.eql('/api/v1/usuarios'));
+    language: text/javascript
+order: 4100

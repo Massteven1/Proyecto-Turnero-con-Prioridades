@@ -1,0 +1,18 @@
+$kind: http-request
+description: El username no admite espacios (@Pattern) → 400 con detallesValidacion.username.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"prueba con espacio","nombreCompleto":"Usuario Inválido","password":"Prueba123*","rol":"OPERADOR"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('detallesValidacion.username', () => pm.expect(r.detallesValidacion).to.have.property('username'));
+    language: text/javascript
+order: 4200

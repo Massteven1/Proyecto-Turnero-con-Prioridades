@@ -1,0 +1,17 @@
+$kind: http-request
+description: Prueba que el PUT persistió la contraseña nueva como hash BCrypt. No toca {{token}} de la colección.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"{{nuevoUsername}}","password":"NuevaClave123*"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con la contraseña nueva', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('rol OPERADOR', () => pm.expect(r.rol).to.eql('OPERADOR'));
+    language: text/javascript
+order: 5100

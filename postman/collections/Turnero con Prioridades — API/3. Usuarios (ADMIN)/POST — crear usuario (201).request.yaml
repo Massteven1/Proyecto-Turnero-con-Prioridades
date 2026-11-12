@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  Crea un OPERADOR con username único por corrida (prefijo prueba_ + timestamp) para no chocar con el 409.
+  El script previo genera {{nuevoUsername}} y el test guarda {{usuarioCreadoId}} para los PUT siguientes.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"{{nuevoUsername}}","nombreCompleto":"Usuario Prueba {{$timestamp}}","password":"Prueba123*","rol":"OPERADOR"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      pm.collectionVariables.set('nuevoUsername', 'prueba_' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('usuarioCreadoId', String(r.id));
+      pm.test('nace activo', () => pm.expect(r.activo).to.eql(true));
+      pm.test('rol OPERADOR', () => pm.expect(r.rol).to.eql('OPERADOR'));
+      pm.test('username devuelto es el enviado', () => pm.expect(r.username).to.eql(pm.collectionVariables.get('nuevoUsername')));
+      pm.test('sin passwordHash en la respuesta', () => {
+        pm.expect(r).to.not.have.property('passwordHash');
+        pm.expect(r).to.not.have.property('password');
+      });
+    language: text/javascript
+order: 4000

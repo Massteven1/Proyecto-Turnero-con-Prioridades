@@ -1,0 +1,14 @@
+$kind: collection
+description: |-
+  CRUD de usuarios del personal — Fase 2a. Todo el folder exige rol ADMIN (@PreAuthorize): un OPERADOR recibe 403.
+
+  Requisitos antes de correrlo:
+  - Ejecutar "Login OK — admin (guarda token)" (carpeta 1): guarda {{token}}.
+  - Ejecutar "Login OK — operador1" (carpeta 1): guarda {{tokenOperador}} para el caso 403.
+  - Correr los requests de arriba hacia abajo: "crear usuario (201)" guarda {{usuarioCreadoId}} y {{nuevoUsername}}, que usan los PUT siguientes.
+
+  Los casos 409 (turno activo y último ADMIN) usan la semilla: operador1 tiene un turno LLAMADO y admin es el único ADMIN activo. No modifican datos.
+
+  Limpieza opcional de los usuarios creados por las corridas (quedan inactivos, el API no expone DELETE):
+  DELETE FROM usuarios WHERE username LIKE 'prueba_%';
+order: 3000

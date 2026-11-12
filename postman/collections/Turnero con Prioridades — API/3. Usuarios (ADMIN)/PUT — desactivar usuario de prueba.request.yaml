@@ -1,0 +1,19 @@
+$kind: http-request
+description: Desactivación lógica del usuario de prueba (activo=false). password null conserva el hash actual.
+url: "{{baseUrl}}/api/v1/usuarios/{{usuarioCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombreCompleto":"Usuario Prueba Actualizado","password":null,"rol":"OPERADOR","activo":false}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('activo=false', () => pm.expect(r.activo).to.eql(false));
+      pm.test('sigue existiendo (baja lógica)', () => pm.expect(r.id).to.eql(Number(pm.collectionVariables.get('usuarioCreadoId'))));
+    language: text/javascript
+order: 6000

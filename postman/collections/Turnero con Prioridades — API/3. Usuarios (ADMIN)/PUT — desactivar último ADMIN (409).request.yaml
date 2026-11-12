@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  admin (id 1 de la semilla) es el único ADMIN activo → desactivarlo devuelve 409.
+  Si este test falla con 200, perdés la cuenta ADMIN: restaurá activo=1 por SQL con el hash de la semilla.
+url: "{{baseUrl}}/api/v1/usuarios/1"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombreCompleto":"Administrador General Banco","password":null,"rol":"ADMIN","activo":false}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict por último ADMIN', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje menciona último ADMIN', () => pm.expect(r.mensaje).to.match(/último ADMIN/i));
+    language: text/javascript
+order: 8000

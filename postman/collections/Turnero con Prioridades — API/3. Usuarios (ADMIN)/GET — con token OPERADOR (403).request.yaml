@@ -1,0 +1,17 @@
+$kind: http-request
+description: |-
+  Con el token de operador1 ({{tokenOperador}}) el @PreAuthorize hasRole('ADMIN') rechaza → 403 con ErrorResponseDTO.
+  Si falta {{tokenOperador}}, corré "Login OK — operador1" de la carpeta 1.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('mensaje de permisos', () => pm.expect(r.mensaje).to.match(/permisos/i));
+      pm.test('ruta del ErrorResponseDTO', () => pm.expect(r.ruta).to.eql('/api/v1/usuarios'));
+    language: text/javascript
+order: 9000

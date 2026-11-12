@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Degradar al único ADMIN activo a OPERADOR también devuelve 409 (misma regla que la desactivación).
+  Si este test falla con 200, corregí el rol de admin por SQL.
+url: "{{baseUrl}}/api/v1/usuarios/1"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombreCompleto":"Administrador General Banco","password":null,"rol":"OPERADOR","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict por último ADMIN', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje menciona último ADMIN', () => pm.expect(r.mensaje).to.match(/último ADMIN/i));
+    language: text/javascript
+order: 8100

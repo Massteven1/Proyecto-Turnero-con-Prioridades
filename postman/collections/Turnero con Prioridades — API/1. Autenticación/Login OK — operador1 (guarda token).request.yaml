@@ -1,5 +1,7 @@
 $kind: http-request
-description: Cuenta semilla operador1 / Operador123!. Útil para probar permisos por rol (403 del ADMIN-only).
+description: |-
+  Cuenta semilla operador1 / Operador123!. Guarda el token en {{tokenOperador}} (no pisa {{token}}, que queda para ADMIN).
+  Si el login falla con 401, la cuenta está desactivada: restaurá activo=1 por SQL.
 url: "{{baseUrl}}/api/v1/auth/login"
 method: POST
 headers:
@@ -12,9 +14,7 @@ scripts:
     code: |-
       pm.test('200 OK', () => pm.response.to.have.status(200));
       const r = pm.response.json();
-      pm.collectionVariables.set('token', r.token);
-      pm.collectionVariables.set('rol', r.rol);
-      pm.collectionVariables.set('usuarioId', String(r.usuarioId));
+      pm.collectionVariables.set('tokenOperador', r.token);
       pm.test('rol OPERADOR', () => pm.expect(r.rol).to.eql('OPERADOR'));
     language: text/javascript
 order: 2000

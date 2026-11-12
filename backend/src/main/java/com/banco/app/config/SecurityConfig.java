@@ -14,6 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -32,9 +33,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 // Seguridad del API: sesion stateless con JWT firmado (HS256).
 // - Rutas publicas: POST /api/v1/auth/login y GET /api/v1/publico/pantalla.
-// - Todo lo demas exige JWT valido; los roles se aplican por fase en cada endpoint.
+// - Todo lo demas exige JWT valido; los roles se aplican con @PreAuthorize
+//   en cada controller (contrato del catalogo de endpoints del xlsx).
 // - El token trae sub=usuarioId, claim "rol" y exp. El filtro JwtAccountValidationFilter
 //   revalida en cada peticion protegida que la cuenta siga activa y su rol vigente.
+@EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
 

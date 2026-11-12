@@ -1,17 +1,19 @@
 $kind: http-request
 name: GET /usuarios con token (verifica JWT)
 description: |-
-  Usa el {{token}} guardado por los logins.
+  Usa el {{token}} guardado por el login de ADMIN.
 
-  - 404 = correcto por ahora: el JWT pasó la seguridad y el filtro de revalidación; el endpoint llega en Fase 2a.
-  - Desde Fase 2a este mismo request devuelve 200 con List<UsuarioDTO>.
+  - 200 con List<UsuarioDTO> = el JWT pasó la seguridad, el filtro de revalidación y el @PreAuthorize.
   - Si quitás el token manualmente → 401 con ErrorResponseDTO.
+  - Con el token de un OPERADOR → 403 (ver la carpeta 3).
 url: "{{baseUrl}}/api/v1/usuarios"
 method: GET
 headers:
   Authorization: Bearer {{token}}
 scripts:
   - type: afterResponse
-    code: pm.test('JWT aceptado por el filtro (no 401/403)', () => pm.expect([401, 403]).to.not.include(pm.response.code));
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      pm.test('JWT aceptado (no 401/403)', () => pm.expect([401, 403]).to.not.include(pm.response.code));
     language: text/javascript
 order: 1000
