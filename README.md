@@ -19,7 +19,7 @@ Aplicación cliente-servidor para gestionar turnos bancarios con categorías pre
 
 ## Configuración
 
-Copiar `.env.example` como referencia y definir las variables en el entorno donde se ejecute el backend. No guardar credenciales reales en Git.
+Las credenciales y secretos se definen mediante variables de entorno del sistema; la referencia completa está en `backend/src/main/resources/application-example.yml` (exige la documentación: variables `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` y `JWT_EXPIRATION_MS`, sin credenciales reales en el repositorio). Los valores por defecto de desarrollo sirven para un XAMPP local.
 
 Inicializar la base de datos:
 

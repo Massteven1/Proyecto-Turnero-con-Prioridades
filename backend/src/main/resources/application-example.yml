@@ -1,0 +1,30 @@
+# ============================================================================
+# Plantilla de configuracion del backend (Turnero con Prioridades).
+# Este archivo NO se carga automaticamente: es la REFERENCIA de la documentacion.
+# Para usarlo: copiarlo a application.yml (o definir las variables de entorno
+# del sistema) con valores reales, y NUNCA subir credenciales a Git.
+# Las variables que exige la documentacion son:
+#   DB_URL, DB_USERNAME, DB_PASSWORD (conexion MySQL/MariaDB)
+#   JWT_SECRET, JWT_EXPIRATION_MS (firma y vigencia del token HS256)
+# Sintaxis ${VAR:default}: usa la variable de entorno si existe, si no el default
+# (los defaults de abajo sirven para un XAMPP local con root sin contrasena).
+# ============================================================================
+spring:
+  application:
+    name: backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/banco_turnero_db?serverTimezone=America/Bogota}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  jackson:
+    time-zone: America/Bogota
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:genera-una-cadena-larga-aleatoria-de-64-caracteres-o-mas}
+    vigencia-ms: ${JWT_EXPIRATION_MS:7200000}
