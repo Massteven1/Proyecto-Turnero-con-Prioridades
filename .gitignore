@@ -1,6 +1,13 @@
+# Secretos y archivos de entorno: nunca al repo.
+# La configuracion de ejemplo vive en backend/src/main/resources/application-example.yml
 .env
 .env.*
-!.env.example
+
+# Cache de herramientas del agente y editor
+.atl/
+.vscode
+
+# Sistema y build
 *.log
 .DS_Store
 Thumbs.db
