@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  El prefijo debe cumplir ^[A-Z]{2,10}$: las minúsculas se rechazan con 400 antes de tocar la BD.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"caj","nombre":"Servicio con prefijo inválido","descripcion":null}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('detalle de validación del campo', () => pm.expect(r.detallesValidacion).to.have.property('codigoPrefijo'));
+    language: text/javascript
+order: 4000

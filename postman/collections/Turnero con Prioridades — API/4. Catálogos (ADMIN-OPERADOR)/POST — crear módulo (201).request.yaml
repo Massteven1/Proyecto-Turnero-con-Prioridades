@@ -1,0 +1,36 @@
+$kind: http-request
+description: |-
+  Crea un módulo en el servicio de prueba con nombre único por corrida.
+  El script previo genera {{moduloNombre}}; el test guarda {{moduloCreadoId}}.
+url: "{{baseUrl}}/api/v1/modulos"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{servicioCreadoId}},"nombre":"{{moduloNombre}}"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      pm.collectionVariables.set('moduloNombre', 'Modulo Prueba ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('moduloCreadoId', String(r.id));
+      pm.test('nace activo y libre', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.ocupado).to.eql(false);
+        pm.expect(r.turnoActivoCodigo).to.eql(null);
+      });
+      pm.test('trae el servicio asociado', () => {
+        pm.expect(String(r.servicioId)).to.eql(pm.collectionVariables.get('servicioCreadoId'));
+        pm.expect(r.servicioPrefijo).to.eql(pm.collectionVariables.get('servicioPrefijo'));
+      });
+      pm.test('campos del ModuloDTO', () => {
+        pm.expect(r).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoCodigo');
+      });
+    language: text/javascript
+order: 7000

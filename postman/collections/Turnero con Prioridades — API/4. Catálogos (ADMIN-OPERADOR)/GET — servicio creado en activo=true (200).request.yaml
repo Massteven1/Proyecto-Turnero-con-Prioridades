@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  El servicio recién creado aparece en el filtro activo=true con su fila de estado de cola ya inicializada.
+url: "{{baseUrl}}/api/v1/servicios?activo=true"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const idCreado = pm.collectionVariables.get('servicioCreadoId');
+      pm.test('incluye el servicio creado', () => {
+        pm.expect(r.some(s => String(s.id) === idCreado)).to.eql(true);
+      });
+      pm.test('todos activos', () => r.forEach(s => pm.expect(s.activo).to.eql(true)));
+    language: text/javascript
+order: 6000

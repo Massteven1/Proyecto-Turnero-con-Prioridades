@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  CAJ ya existe en la semilla: el contrato responde 409 Conflict por prefijo duplicado.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"CAJ","nombre":"Otro Nombre de Servicio","descripcion":null}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO', () => pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion'));
+    language: text/javascript
+order: 5000

@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  El nombre de categoría es único: renombrar con el de otra categoría responde 409.
+url: "{{baseUrl}}/api/v1/categorias/3"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"Discapacidad"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje de nombre duplicado', () => pm.expect(r.mensaje).to.include('categoría'));
+    language: text/javascript
+order: 29000

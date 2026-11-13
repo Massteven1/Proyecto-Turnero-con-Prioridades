@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Crea un servicio con prefijo y nombre únicos por corrida (3 letras aleatorias + timestamp).
+  El script previo genera {{servicioPrefijo}} y {{servicioNombre}}; el test guarda {{servicioCreadoId}}.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"{{servicioPrefijo}}","nombre":"{{servicioNombre}}","descripcion":"Servicio de prueba de la colección"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let prefijo = '';
+      for (let i = 0; i < 3; i++) {
+        prefijo += letras.charAt(Math.floor(Math.random() * letras.length));
+      }
+      pm.collectionVariables.set('servicioPrefijo', prefijo);
+      pm.collectionVariables.set('servicioNombre', 'Servicio Prueba ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('servicioCreadoId', String(r.id));
+      pm.test('nace activo', () => pm.expect(r.activo).to.eql(true));
+      pm.test('prefijo devuelto es el enviado', () => pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('servicioPrefijo')));
+      pm.test('campos del ServicioDTO', () => pm.expect(r).to.have.all.keys('id', 'codigoPrefijo', 'nombre', 'descripcion', 'activo'));
+    language: text/javascript
+order: 3000

@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Para OPERADOR el backend fuerza activo=true: nunca ve módulos inactivos.
+url: "{{baseUrl}}/api/v1/modulos"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('todos los módulos devueltos están activos', () => {
+        pm.expect(r.length).to.be.at.least(1);
+        r.forEach(m => pm.expect(m.activo).to.eql(true));
+      });
+    language: text/javascript
+order: 14000

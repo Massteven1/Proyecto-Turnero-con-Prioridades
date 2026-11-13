@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Filtro ?servicioId= del contrato: devuelve los módulos del servicio de prueba creado en esta corrida.
+url: "{{baseUrl}}/api/v1/modulos?servicioId={{servicioCreadoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const idCreado = pm.collectionVariables.get('servicioCreadoId');
+      pm.test('solo devuelve el módulo del servicio filtrado', () => {
+        pm.expect(r.length).to.eql(1);
+        pm.expect(String(r[0].id)).to.eql(pm.collectionVariables.get('moduloCreadoId'));
+        pm.expect(String(r[0].servicioId)).to.eql(idCreado);
+      });
+    language: text/javascript
+order: 13000

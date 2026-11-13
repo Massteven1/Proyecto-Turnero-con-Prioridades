@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Caja General tiene turnos EN_ESPERA del día y un turno LLAMADO: la baja lógica responde 409.
+url: "{{baseUrl}}/api/v1/servicios/1"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"Caja General","descripcion":"Depósitos, retiros y pagos en ventanilla","activo":false}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje de turnos pendientes o activos', () => pm.expect(r.mensaje).to.include('turnos'));
+    language: text/javascript
+order: 26000

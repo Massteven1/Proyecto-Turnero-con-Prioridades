@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  La unicidad del nombre de módulo es global e ignora mayúsculas y espacios exteriores:
+  "  ventanilla caja 1  " choca con "Ventanilla Caja 1" de la semilla (409).
+url: "{{baseUrl}}/api/v1/modulos"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":1,"nombre":"  ventanilla caja 1  "}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO', () => pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion'));
+    language: text/javascript
+order: 8000

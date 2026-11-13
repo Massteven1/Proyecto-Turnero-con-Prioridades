@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Un OPERADOR no puede listar módulos inactivos: ?activo=false responde 403 (contrato del endpoint).
+url: "{{baseUrl}}/api/v1/modulos?activo=false"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO', () => {
+        pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion');
+        pm.expect(r.status).to.eql(403);
+      });
+    language: text/javascript
+order: 15000

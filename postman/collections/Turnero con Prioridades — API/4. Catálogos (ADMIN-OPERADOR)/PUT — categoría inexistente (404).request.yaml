@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Categoría inexistente: 404 antes de validar unicidad.
+url: "{{baseUrl}}/api/v1/categorias/9999"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"Categoria Fantasma"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('404 Not Found', () => pm.response.to.have.status(404));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO', () => pm.expect(r.status).to.eql(404));
+    language: text/javascript
+order: 30000

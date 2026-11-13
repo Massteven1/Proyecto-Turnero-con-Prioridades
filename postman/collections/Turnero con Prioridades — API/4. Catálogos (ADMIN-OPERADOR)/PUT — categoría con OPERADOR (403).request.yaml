@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Renombrar categorías es exclusivo de ADMIN: OPERADOR recibe 403.
+url: "{{baseUrl}}/api/v1/categorias/3"
+method: PUT
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"Adulto mayor"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO', () => pm.expect(r.status).to.eql(403));
+    language: text/javascript
+order: 31000

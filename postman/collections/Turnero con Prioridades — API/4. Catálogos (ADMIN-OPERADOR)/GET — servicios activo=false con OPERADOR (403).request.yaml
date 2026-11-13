@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Un OPERADOR siempre recibe solo activo=true. Si pide ?activo=false, el contrato exige 403.
+url: "{{baseUrl}}/api/v1/servicios?activo=false"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del contrato', () => {
+        pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion');
+        pm.expect(r.status).to.eql(403);
+        pm.expect(r.ruta).to.eql('/api/v1/servicios');
+      });
+    language: text/javascript
+order: 2000

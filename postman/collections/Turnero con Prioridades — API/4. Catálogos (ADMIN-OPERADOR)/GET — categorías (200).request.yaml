@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  Las cuatro categorías base, siempre activas y en el orden del catálogo.
+url: "{{baseUrl}}/api/v1/categorias"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('son las cuatro categorías base', () => {
+        pm.expect(r.length).to.eql(4);
+        pm.expect(r.map(c => c.id)).to.eql([1, 2, 3, 4]);
+        r.forEach(c => pm.expect(c.activo).to.eql(true));
+      });
+      pm.test('Discapacidad, Embarazada y Adulto mayor son preferentes', () => {
+        pm.expect(r.filter(c => c.preferente === true).length).to.eql(3);
+        pm.expect(r.find(c => c.id === 4).preferente).to.eql(false);
+      });
+      pm.test('campos del CategoriaDTO', () => {
+        r.forEach(c => pm.expect(c).to.have.all.keys('id', 'nombre', 'preferente', 'activo'));
+      });
+    language: text/javascript
+order: 27000

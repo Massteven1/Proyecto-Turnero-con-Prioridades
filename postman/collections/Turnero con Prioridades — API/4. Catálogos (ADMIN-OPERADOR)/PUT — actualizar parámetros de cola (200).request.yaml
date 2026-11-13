@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Actualiza umbral y proporción de CAJ con los valores de la semilla para no alterar datos.
+url: "{{baseUrl}}/api/v1/parametros-cola/1"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"umbralEnvejecimientoMin":15,"proporcionPreferente":3}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('valores aplicados', () => {
+        pm.expect(r.servicioId).to.eql(1);
+        pm.expect(r.umbralEnvejecimientoMin).to.eql(15);
+        pm.expect(r.proporcionPreferente).to.eql(3);
+        pm.expect(r.contadorPreferentes).to.be.at.most(3);
+      });
+    language: text/javascript
+order: 33000

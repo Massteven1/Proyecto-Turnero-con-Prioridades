@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  ADMIN puede consultar los servicios inactivos con ?activo=false: el creado debe aparecer.
+url: "{{baseUrl}}/api/v1/servicios?activo=false"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const idCreado = pm.collectionVariables.get('servicioCreadoId');
+      pm.test('incluye el servicio dado de baja', () => {
+        pm.expect(r.some(s => String(s.id) === idCreado)).to.eql(true);
+        r.forEach(s => pm.expect(s.activo).to.eql(false));
+      });
+    language: text/javascript
+order: 20000

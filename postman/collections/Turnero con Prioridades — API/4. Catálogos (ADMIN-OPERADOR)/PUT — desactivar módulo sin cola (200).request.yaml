@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  El módulo creado no tiene turnos y el servicio aún conserva otros módulos activos:
+  la baja es válida aunque sea el último activo de su servicio, porque no hay cola EN_ESPERA hoy.
+url: "{{baseUrl}}/api/v1/modulos/{{moduloCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{servicioCreadoId}},"nombre":"{{moduloNombre}} Principal","activo":false}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('queda inactivo', () => pm.expect(r.activo).to.eql(false));
+    language: text/javascript
+order: 25000

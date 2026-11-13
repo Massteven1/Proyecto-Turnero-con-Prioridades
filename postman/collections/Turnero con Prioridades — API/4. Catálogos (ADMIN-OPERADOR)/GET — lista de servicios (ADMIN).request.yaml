@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  Lista completa de servicios ordenada por id ASC. ADMIN puede pedir activos e inactivos.
+url: "{{baseUrl}}/api/v1/servicios"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('es un array de servicios', () => pm.expect(r).to.be.an('array'));
+      pm.test('la semilla trae CAJ y ASE', () => {
+        const prefijos = r.map(s => s.codigoPrefijo);
+        pm.expect(prefijos).to.include('CAJ');
+        pm.expect(prefijos).to.include('ASE');
+      });
+      pm.test('campos del ServicioDTO', () => {
+        r.forEach(s => pm.expect(s).to.have.all.keys('id', 'codigoPrefijo', 'nombre', 'descripcion', 'activo'));
+      });
+      pm.test('orden ascendente por id', () => {
+        const ids = r.map(s => s.id);
+        pm.expect(ids).to.eql([...ids].sort((a, b) => a - b));
+      });
+    language: text/javascript
+order: 1000

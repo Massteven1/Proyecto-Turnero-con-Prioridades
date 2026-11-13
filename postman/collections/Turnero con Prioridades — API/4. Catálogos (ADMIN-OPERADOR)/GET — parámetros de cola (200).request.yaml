@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Estado diario de cola por servicio: umbral, proporción, consecutivo y contador vigentes.
+url: "{{baseUrl}}/api/v1/parametros-cola"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('un registro por servicio', () => pm.expect(r.length).to.be.at.least(2));
+      const caj = r.find(e => String(e.servicioId) === '1');
+      pm.test('CAJ trae los valores por defecto de la semilla', () => {
+        pm.expect(caj.servicioPrefijo).to.eql('CAJ');
+        pm.expect(caj.umbralEnvejecimientoMin).to.eql(15);
+        pm.expect(caj.proporcionPreferente).to.eql(3);
+      });
+      pm.test('campos del EstadoColaDTO', () => {
+        r.forEach(e => pm.expect(e).to.have.all.keys('servicioId', 'servicioPrefijo', 'servicioNombre', 'fechaOperacion', 'ultimoConsecutivo', 'contadorPreferentes', 'umbralEnvejecimientoMin', 'proporcionPreferente'));
+      });
+    language: text/javascript
+order: 32000

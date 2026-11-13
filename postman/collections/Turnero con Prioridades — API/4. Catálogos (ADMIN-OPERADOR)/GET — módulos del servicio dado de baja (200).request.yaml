@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Cascada del contrato: al dar de baja el servicio, todos sus módulos pasan a activo=false.
+url: "{{baseUrl}}/api/v1/modulos?servicioId={{servicioCreadoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('el módulo quedó inactivo por la cascada', () => {
+        pm.expect(r.length).to.eql(1);
+        pm.expect(r[0].activo).to.eql(false);
+      });
+    language: text/javascript
+order: 19000

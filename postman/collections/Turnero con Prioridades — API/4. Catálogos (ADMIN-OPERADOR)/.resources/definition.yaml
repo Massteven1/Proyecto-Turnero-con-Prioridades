@@ -1,0 +1,21 @@
+$kind: collection
+description: |-
+  Servicios, módulos, categorías y parámetros de cola — Fase 2b.
+  GET lo comparten ADMIN y OPERADOR; las mutaciones son exclusivas de ADMIN (403 para OPERADOR).
+
+  Requisitos antes de correrlo:
+  - Ejecutar "Login OK — admin (guarda token)" (carpeta 1): guarda {{token}}.
+  - Ejecutar "Login OK — operador1" (carpeta 1): guarda {{tokenOperador}} para los casos 403.
+  - Correr los requests de arriba hacia abajo: la creación del servicio guarda {{servicioCreadoId}}
+    y la del módulo guarda {{moduloCreadoId}}.
+
+  Los casos 409 de turnos (servicio con cola y módulo ocupado) usan la semilla y no modifican datos.
+  El caso "último módulo activo con cola EN_ESPERA" requiere un turno EN_ESPERA del día y se cubre
+  en la batería E2E, no en la colección.
+
+  Limpieza opcional de los catálogos creados por las corridas (el API no expone DELETE):
+  DELETE FROM modulos_atencion WHERE servicio_id > 2;
+  UPDATE modulos_atencion SET activo = 1 WHERE id IN (1, 2, 3);
+  DELETE FROM estado_cola_servicio WHERE servicio_id > 2;
+  DELETE FROM servicios WHERE id > 2;
+order: 4000

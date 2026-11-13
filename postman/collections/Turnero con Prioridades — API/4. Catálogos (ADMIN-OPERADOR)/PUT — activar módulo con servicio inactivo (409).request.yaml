@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Un módulo de un servicio inactivo no puede reactivarse: primero debe reactivarse el servicio (409).
+url: "{{baseUrl}}/api/v1/modulos/{{moduloCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{servicioCreadoId}},"nombre":"{{moduloNombre}} Principal","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('mensaje de servicio inactivo', () => pm.expect(r.mensaje).to.include('inactivo'));
+    language: text/javascript
+order: 21000

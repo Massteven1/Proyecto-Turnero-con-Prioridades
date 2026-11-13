@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  El PUT no recibe codigoPrefijo (es inmutable): solo cambia nombre, descripción y estado.
+url: "{{baseUrl}}/api/v1/servicios/{{servicioCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"{{servicioNombre}} Renombrado","descripcion":"Renombrado por la colección","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre actualizado, prefijo intacto', () => {
+        pm.expect(r.nombre).to.match(/ Renombrado$/);
+        pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('servicioPrefijo'));
+        pm.expect(r.activo).to.eql(true);
+      });
+    language: text/javascript
+order: 10000

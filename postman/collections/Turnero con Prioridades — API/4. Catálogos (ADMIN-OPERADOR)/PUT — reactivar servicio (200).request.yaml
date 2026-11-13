@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Reactivar el servicio no reactiva sus módulos: quedan inactivos para habilitarlos uno por uno.
+url: "{{baseUrl}}/api/v1/servicios/{{servicioCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"{{servicioNombre}} Renombrado","descripcion":"Renombrado por la colección","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('vuelve a estar activo', () => pm.expect(r.activo).to.eql(true));
+    language: text/javascript
+order: 22000

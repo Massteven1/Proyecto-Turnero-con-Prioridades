@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  Un servicio inexistente se rechaza con 404 antes de validar el resto del cuerpo.
+url: "{{baseUrl}}/api/v1/modulos"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":9999,"nombre":"Modulo Fantasma"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('404 Not Found', () => pm.response.to.have.status(404));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO', () => {
+        pm.expect(r.status).to.eql(404);
+        pm.expect(r.mensaje).to.include('Servicio');
+      });
+    language: text/javascript
+order: 9000

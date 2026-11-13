@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Renombrar una categoría base es la única modificación permitida. Se envía el mismo
+  nombre para no alterar la semilla y verificar que preferente/activo siguen intactos.
+url: "{{baseUrl}}/api/v1/categorias/3"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"Adulto mayor"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre, preferente y activo intactos', () => {
+        pm.expect(r.id).to.eql(3);
+        pm.expect(r.nombre).to.eql('Adulto mayor');
+        pm.expect(r.preferente).to.eql(true);
+        pm.expect(r.activo).to.eql(true);
+      });
+    language: text/javascript
+order: 28000

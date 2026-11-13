@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  Renombrar un módulo no depende de que esté libre: el bloqueo del contrato es para desactivar.
+url: "{{baseUrl}}/api/v1/modulos/{{moduloCreadoId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{servicioCreadoId}},"nombre":"{{moduloNombre}} Principal","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre actualizado y libre', () => {
+        pm.expect(r.nombre).to.match(/ Principal$/);
+        pm.expect(r.ocupado).to.eql(false);
+        pm.expect(r.turnoActivoCodigo).to.eql(null);
+      });
+    language: text/javascript
+order: 11000

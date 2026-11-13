@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Lista todos los módulos (activos e inactivos) con su servicio y el turno activo.
+  La semilla deja el módulo 1 ocupado con el turno CAJ-20261111-001.
+url: "{{baseUrl}}/api/v1/modulos"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('es un array de módulos', () => pm.expect(r).to.be.an('array'));
+      const m1 = r.find(m => m.id === 1);
+      pm.test('el módulo 1 está ocupado por su turno activo', () => {
+        pm.expect(m1.ocupado).to.eql(true);
+        pm.expect(m1.turnoActivoCodigo).to.eql('CAJ-20261111-001');
+      });
+      pm.test('campos del ModuloDTO', () => {
+        r.forEach(m => pm.expect(m).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoCodigo'));
+      });
+    language: text/javascript
+order: 12000
