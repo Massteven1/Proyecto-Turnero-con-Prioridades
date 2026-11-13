@@ -2,6 +2,7 @@ package com.banco.app.repository;
 
 import com.banco.app.entity.RolUsuario;
 import com.banco.app.entity.Usuario;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -45,4 +46,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> bloquearUsuarioYAdminsActivos(@Param("id") Long id);
 
     long countByRolAndActivo(RolUsuario rol, Boolean activo);
+
+    // PATCH /turnos/{id}/estado: bloquea en UNA sentencia, y en orden ascendente
+    // de id, las cuentas implicadas (el actor del JWT y el operador asignado al
+    // turno), como exige el orden global de bloqueos. Asi dos cambios de estado
+    // simultaneos no se interbloquean.
+    @Query(value = "SELECT * FROM usuarios WHERE id IN (:ids) ORDER BY id ASC FOR UPDATE",
+            nativeQuery = true)
+    List<Usuario> bloquearPorIds(@Param("ids") Collection<Long> ids);
 }

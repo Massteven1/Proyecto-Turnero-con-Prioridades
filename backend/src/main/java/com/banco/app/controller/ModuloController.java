@@ -4,7 +4,10 @@ import com.banco.app.config.Roles;
 import com.banco.app.dto.request.ModuloRequestDTO;
 import com.banco.app.dto.request.ModuloUpdateDTO;
 import com.banco.app.dto.response.ModuloDTO;
+import com.banco.app.dto.response.SiguienteTurnoResponseDTO;
+import com.banco.app.security.Identidad;
 import com.banco.app.service.ModuloService;
+import com.banco.app.service.TurnoService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -27,9 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ModuloController {
 
     private final ModuloService moduloService;
+    private final TurnoService turnoService;
 
-    public ModuloController(ModuloService moduloService) {
+    public ModuloController(ModuloService moduloService, TurnoService turnoService) {
         this.moduloService = moduloService;
+        this.turnoService = turnoService;
     }
 
     // Filtros opcionales del contrato: servicioId para ADMIN y OPERADOR;
@@ -53,5 +58,14 @@ public class ModuloController {
     @PreAuthorize("hasRole('ADMIN')")
     public ModuloDTO actualizar(@PathVariable Long id, @Valid @RequestBody ModuloUpdateDTO peticion) {
         return moduloService.actualizar(id, peticion);
+    }
+
+    // Llamado atomico del siguiente turno del servicio del modulo. El operador
+    // sale del JWT; si la cola esta vacia responde 200 con colaVacia = true.
+    @PostMapping("/{id}/siguiente")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERADOR')")
+    public SiguienteTurnoResponseDTO llamarSiguiente(@PathVariable Long id, Authentication autenticacion) {
+        return turnoService.llamarSiguiente(id,
+                Identidad.usuarioId(autenticacion), Roles.esAdministrador(autenticacion));
     }
 }

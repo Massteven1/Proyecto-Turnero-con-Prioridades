@@ -150,9 +150,9 @@ Implementado:
 - Autenticación con JWT (`POST /api/v1/auth/login`) y revalidación de cuenta y rol en cada petición protegida.
 - Usuarios (`GET`, `POST`, `PUT /api/v1/usuarios`): BCrypt, username inmutable, 409 por turno activo y por último ADMIN activo, 403 a OPERADOR.
 - Catálogos: servicios (`GET`, `POST`, `PUT`), módulos (`GET`, `POST`, `PUT`), categorías (`GET`, `PUT`) y parámetros de cola (`GET`, `PUT`), con autorización por rol y bloqueos pesimistas en el orden definido.
+- Turnos: emisión (`POST /api/v1/turnos`) con consecutivo diario y snapshot de categoría, llamado (`POST /api/v1/modulos/{id}/siguiente`) con proporción N:1 y envejecimiento, y transiciones (`PATCH /api/v1/turnos/{id}/estado`) con motivo obligatorio, propiedad del turno e historial de auditoría.
 
 Pendiente:
 
-- Emisión, llamado y transiciones de turnos (incluida la proporción N:1 y el envejecimiento).
 - Pantalla pública, historial e indicadores.
 - Vistas del frontend Angular y los casos P01–P12 de la colección de Postman.

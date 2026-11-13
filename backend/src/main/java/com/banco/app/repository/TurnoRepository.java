@@ -5,6 +5,7 @@ import com.banco.app.entity.Turno;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,6 +34,12 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     // Cola EN_ESPERA de un servicio ordenada FIFO con desempate por id ASC
     List<Turno> findByServicioIdAndFechaOperacionAndEstadoOrderByFechaIngresoAscIdAsc(
             Long servicioId, LocalDate fechaOperacion, EstadoTurno estado);
+
+    // Fase 3: bloqueo del turno candidato antes de pasarlo a LLAMADO y del
+    // turno objetivo antes de cambiar su estado. SQL nativo a proposito:
+    // Hibernate 7 genera "FOR UPDATE OF <alias>" en HQL y MariaDB lo rechaza.
+    @Query(value = "SELECT * FROM turnos WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<Turno> findByIdForUpdate(@Param("id") Long id);
 
     // GET /modulos: turno activo (LLAMADO o EN_ATENCION) por modulo, para
     // calcular "ocupado" y "turnoActivoCodigo" sin una consulta por fila
