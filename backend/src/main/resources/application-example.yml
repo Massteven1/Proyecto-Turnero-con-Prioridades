@@ -5,9 +5,11 @@
 # del sistema) con valores reales, y NUNCA subir credenciales a Git.
 # Las variables que exige la documentacion son:
 #   DB_URL, DB_USERNAME, DB_PASSWORD (conexion MySQL/MariaDB)
-#   JWT_SECRET, JWT_EXPIRATION_MS (firma y vigencia del token HS256)
-# Sintaxis ${VAR:default}: usa la variable de entorno si existe, si no el default
-# (los defaults de abajo sirven para un XAMPP local con root sin contrasena).
+#   JWT_SECRET (OBLIGATORIA: sin ella la aplicacion no arranca)
+#   JWT_EXPIRATION_MS (opcional, 7200000 = 2 horas por defecto)
+# Sintaxis ${VAR:default}: usa la variable de entorno si existe, si no el default.
+# JWT_SECRET no tiene default a proposito: el secreto de firma debe vivir solo
+# en el entorno (o en un application.yml local excluido del repositorio).
 # ============================================================================
 spring:
   application:
@@ -26,5 +28,6 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:genera-una-cadena-larga-aleatoria-de-64-caracteres-o-mas}
+    # Generar con: [Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))
+    secret: ${JWT_SECRET}
     vigencia-ms: ${JWT_EXPIRATION_MS:7200000}

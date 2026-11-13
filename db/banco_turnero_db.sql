@@ -77,7 +77,7 @@ CREATE TABLE usuarios (
     CONSTRAINT chk_usuarios_rol CHECK (rol IN ('ADMIN', 'OPERADOR')),
     CONSTRAINT chk_usuarios_activo CHECK (activo IN (0, 1)),
     CONSTRAINT chk_usuarios_username CHECK (CHAR_LENGTH(TRIM(username)) BETWEEN 3 AND 50),
-    CONSTRAINT chk_usuarios_nombre CHECK (CHAR_LENGTH(TRIM(nombre_completo)) BETWEEN 2 AND 100)
+    CONSTRAINT chk_usuarios_nombre CHECK (CHAR_LENGTH(TRIM(nombre_completo)) BETWEEN 3 AND 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
