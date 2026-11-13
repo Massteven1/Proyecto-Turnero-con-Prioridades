@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  Cierre del flujo de la carpeta: operador1 cancela su propio turno LLAMADO
+  (LLAMADO -> CANCELADO con motivo) y deja el módulo libre.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoAjenoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"CANCELADO","motivo":"El cliente no se presentó al llamado"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('estado CANCELADO con motivo', () => {
+        pm.expect(r.estado).to.eql('CANCELADO');
+        pm.expect(r.motivoCancelacionAusencia).to.eql('El cliente no se presentó al llamado');
+        pm.expect(r.fechaCancelacionAusencia).to.not.eql(null);
+      });
+      pm.test('conserva la asignación del llamado', () => {
+        pm.expect(String(r.moduloId)).to.eql(pm.collectionVariables.get('turnoModuloId'));
+        pm.expect(r.operadorUsername).to.eql('admin');
+      });
+    language: text/javascript
+order: 38800

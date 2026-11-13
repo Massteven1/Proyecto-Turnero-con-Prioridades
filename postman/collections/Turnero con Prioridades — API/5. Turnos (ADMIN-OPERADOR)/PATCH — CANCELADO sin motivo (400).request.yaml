@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Para CANCELADO y AUSENTE el motivo es obligatorio (5 a 255 caracteres).
+  Sin motivo responde 400 antes de tocar el turno.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoCancelableId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"CANCELADO"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('exige motivo entre 5 y 255 caracteres', () => pm.expect(r.mensaje).to.include('motivo'));
+    language: text/javascript
+order: 38300

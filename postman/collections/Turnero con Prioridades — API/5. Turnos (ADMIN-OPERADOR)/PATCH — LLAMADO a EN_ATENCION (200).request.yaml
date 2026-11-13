@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  LLAMADO -> EN_ATENCION: el turno adquiere fecha de inicio de atención y
+  conserva el módulo y el operador asignados en el llamado.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoLlamadoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"EN_ATENCION"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('estado EN_ATENCION', () => pm.expect(r.estado).to.eql('EN_ATENCION'));
+      pm.test('registra fecha de inicio de atención', () => pm.expect(r.fechaInicioAtencion).to.not.eql(null));
+      pm.test('conserva la asignación del llamado', () => {
+        pm.expect(String(r.moduloId)).to.eql(pm.collectionVariables.get('turnoModuloId'));
+        pm.expect(r.operadorUsername).to.eql('admin');
+        pm.expect(r.fechaLlamado).to.not.eql(null);
+      });
+    language: text/javascript
+order: 37900

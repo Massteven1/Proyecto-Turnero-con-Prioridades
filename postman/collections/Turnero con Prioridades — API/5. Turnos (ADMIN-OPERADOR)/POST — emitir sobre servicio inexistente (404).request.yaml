@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  Emitir un turno sobre un servicio inexistente responde 404 Not Found con el
+  ErrorResponseDTO completo.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 9999 - Servicio fantasma","servicioId":999999,"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('404 Not Found', () => pm.response.to.have.status(404));
+      const r = pm.response.json();
+      pm.test('mensaje de servicio no encontrado', () => pm.expect(r.mensaje).to.include('Servicio'));
+      pm.test('ErrorResponseDTO del contrato', () => pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion'));
+    language: text/javascript
+order: 37400

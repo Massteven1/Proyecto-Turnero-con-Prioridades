@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  EN_ATENCION -> FINALIZADO: estado terminal con fecha de fin. El turno conserva
+  módulo y operador para mantener la trazabilidad de la asignación.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoLlamadoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"FINALIZADO"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('estado FINALIZADO', () => pm.expect(r.estado).to.eql('FINALIZADO'));
+      pm.test('registra fecha de fin de atención', () => pm.expect(r.fechaFinAtencion).to.not.eql(null));
+      pm.test('conserva la asignación histórica', () => {
+        pm.expect(String(r.moduloId)).to.eql(pm.collectionVariables.get('turnoModuloId'));
+        pm.expect(r.operadorUsername).to.eql('admin');
+      });
+    language: text/javascript
+order: 38000

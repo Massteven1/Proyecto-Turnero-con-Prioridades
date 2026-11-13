@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Crea un servicio exclusivo de la Fase 3 con prefijo y nombre únicos por corrida,
+  para que el consecutivo diario de los turnos empiece en 001 sin depender de la semilla.
+  El script previo genera {{turnoServicioPrefijo}} y {{turnoServicioNombre}};
+  el test guarda {{turnoServicioId}}.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"{{turnoServicioPrefijo}}","nombre":"{{turnoServicioNombre}}","descripcion":"Servicio de pruebas de emisión y llamado de turnos"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let prefijo = '';
+      for (let i = 0; i < 5; i++) {
+        prefijo += letras.charAt(Math.floor(Math.random() * letras.length));
+      }
+      pm.collectionVariables.set('turnoServicioPrefijo', prefijo);
+      pm.collectionVariables.set('turnoServicioNombre', 'Servicio Turnos ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('turnoServicioId', String(r.id));
+      pm.test('el servicio nace activo', () => pm.expect(r.activo).to.eql(true));
+      pm.test('prefijo devuelto es el enviado', () => pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('turnoServicioPrefijo')));
+    language: text/javascript
+order: 37000

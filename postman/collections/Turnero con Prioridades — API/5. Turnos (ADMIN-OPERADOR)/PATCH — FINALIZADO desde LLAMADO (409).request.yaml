@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  Flujo del contrato: LLAMADO solo pasa a EN_ATENCION, CANCELADO o AUSENTE.
+  Intentar FINALIZAR directo desde LLAMADO responde 409 Conflict.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoLlamadoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"FINALIZADO"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 Conflict', () => pm.response.to.have.status(409));
+      const r = pm.response.json();
+      pm.test('transición no permitida', () => pm.expect(r.mensaje).to.include('Transición no permitida'));
+      pm.test('el turno sigue LLAMADO', () => pm.expect(r.mensaje).to.include('LLAMADO'));
+    language: text/javascript
+order: 37800

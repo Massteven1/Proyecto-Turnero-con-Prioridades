@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  ADMIN llama el turno pendiente: como la cola solo tiene un Regular, el
+  contador de preferentes vuelve a 0.
+url: "{{baseUrl}}/api/v1/modulos/{{turnoModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('llama el turno pendiente', () => {
+        pm.expect(r.colaVacia).to.eql(false);
+        pm.expect(String(r.turno.id)).to.eql(pm.collectionVariables.get('turnoAjenoId'));
+      });
+      pm.test('Regular no preferente deja el contador en 0', () => pm.expect(r.contadorPreferentesActual).to.eql(0));
+      pm.test('asignado a la cuenta del JWT', () => pm.expect(r.turno.operadorUsername).to.eql('admin'));
+    language: text/javascript
+order: 38600

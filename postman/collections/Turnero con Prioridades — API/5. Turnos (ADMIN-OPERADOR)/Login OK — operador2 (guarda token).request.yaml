@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Guarda {{tokenOperador2}} para el caso de propiedad: un OPERADOR no puede
+  operar sobre el turno asignado a otro.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"operador2","password":"Operador456!"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.collectionVariables.set('tokenOperador2', r.token);
+      pm.test('rol OPERADOR', () => pm.expect(r.rol).to.eql('OPERADOR'));
+    language: text/javascript
+order: 36900

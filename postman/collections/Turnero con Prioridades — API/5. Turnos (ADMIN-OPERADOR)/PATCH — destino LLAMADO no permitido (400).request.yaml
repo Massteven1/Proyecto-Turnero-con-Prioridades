@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  El PATCH solo acepta los destinos operativos: EN_ATENCION, FINALIZADO,
+  CANCELADO y AUSENTE. Pedir LLAMADO responde 400.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoLlamadoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"LLAMADO"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('explica los destinos válidos', () => pm.expect(r.mensaje).to.include('EN_ATENCION'));
+      pm.test('la ruta del ErrorResponseDTO es la del turno', () => pm.expect(r.ruta).to.eql(`/api/v1/turnos/${pm.collectionVariables.get('turnoLlamadoId')}/estado`));
+    language: text/javascript
+order: 37700

@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Segundo turno del servicio, categoría 4 (Regular): conserva el consecutivo
+  diario (002) y queda REGULAR, no envejecido, porque se acaba de emitir.
+  Guarda {{turnoCancelableId}} para los casos de cancelación.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 9003 - Pedro S.","servicioId":{{turnoServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('turnoCancelableId', String(r.id));
+      pm.test('consecutivo diario 002', () => pm.expect(r.consecutivo).to.eql(2));
+      pm.test('regular no envejecido', () => {
+        pm.expect(r.preferenteOriginal).to.eql(false);
+        pm.expect(r.preferenteEfectivo).to.eql(false);
+        pm.expect(r.envejecido).to.eql(false);
+        pm.expect(r.conjuntoEfectivo).to.eql('REGULAR');
+      });
+      pm.test('instantánea Regular', () => pm.expect(r.categoriaOriginalNombre).to.eql('Regular'));
+    language: text/javascript
+order: 38200

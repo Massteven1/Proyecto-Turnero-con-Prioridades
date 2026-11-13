@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  El identificador del cliente exige entre 3 y 100 caracteres: con 2 responde
+  400 Bad Request y el detalle de validación por campo.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"AB","servicioId":{{turnoServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del contrato', () => {
+        pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion');
+        pm.expect(r.ruta).to.eql('/api/v1/turnos');
+      });
+      pm.test('detalle del campo identificadorCliente', () => pm.expect(r.detallesValidacion).to.have.property('identificadorCliente'));
+    language: text/javascript
+order: 37300

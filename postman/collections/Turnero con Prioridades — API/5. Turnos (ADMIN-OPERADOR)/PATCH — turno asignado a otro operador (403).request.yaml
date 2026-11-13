@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Un OPERADOR solo puede mover los turnos LLAMADO/EN_ATENCION asignados a su
+  cuenta: operador2 sobre un turno asignado a admin recibe 403.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoAjenoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{tokenOperador2}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"EN_ATENCION"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('explica que el turno está asignado a otro operador', () => pm.expect(r.mensaje).to.include('otro operador'));
+    language: text/javascript
+order: 38700

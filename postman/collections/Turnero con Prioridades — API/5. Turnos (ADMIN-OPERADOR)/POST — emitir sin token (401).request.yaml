@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  La emisión exige JWT: sin cabecera Authorization responde 401 con el
+  ErrorResponseDTO de seguridad.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 1088345 - Sin token","servicioId":1,"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized', () => pm.response.to.have.status(401));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del contrato', () => pm.expect(r).to.have.all.keys('timestamp', 'status', 'error', 'mensaje', 'ruta', 'detallesValidacion'));
+    language: text/javascript
+order: 37500

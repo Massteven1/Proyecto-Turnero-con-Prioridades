@@ -1,0 +1,52 @@
+$kind: http-request
+description: |-
+  Primer turno del servicio de pruebas: categoría 3 (Adulto mayor, preferente).
+  El test verifica la emisión completa: consecutivo diario 001, código
+  PREFIJO-YYYYMMDD-NNN, estado EN_ESPERA, sin asignación de módulo ni operador,
+  instantánea del nombre de la categoría y conjunto efectivo PREFERENTE.
+  Guarda {{turnoEmitidoId}} y {{turnoEmitidoCodigo}} para los requests siguientes.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 1088345 - Maria L.","servicioId":{{turnoServicioId}},"categoriaId":3}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('turnoEmitidoId', String(r.id));
+      pm.collectionVariables.set('turnoEmitidoCodigo', r.codigo);
+
+      pm.test('campos del TurnoDTO', () => {
+        pm.expect(r).to.have.all.keys('id', 'codigo', 'servicioId', 'servicioNombre', 'categoriaId',
+          'categoriaOriginalNombre', 'preferenteOriginal', 'preferenteEfectivo', 'envejecido',
+          'conjuntoEfectivo', 'moduloId', 'moduloNombre', 'operadorId', 'operadorUsername',
+          'fechaOperacion', 'consecutivo', 'identificadorCliente', 'estado', 'fechaIngreso',
+          'fechaLlamado', 'fechaInicioAtencion', 'fechaFinAtencion', 'fechaCancelacionAusencia',
+          'motivoCancelacionAusencia');
+      });
+      pm.test('consecutivo diario arranca en 001', () => pm.expect(r.consecutivo).to.eql(1));
+      pm.test('código PREFIJO-YYYYMMDD-NNN', () => {
+        const fecha = r.fechaOperacion.replaceAll('-', '');
+        pm.expect(r.codigo).to.eql(`${pm.collectionVariables.get('turnoServicioPrefijo')}-${fecha}-001`);
+      });
+      pm.test('nace EN_ESPERA sin asignación', () => {
+        pm.expect(r.estado).to.eql('EN_ESPERA');
+        pm.expect(r.moduloId).to.eql(null);
+        pm.expect(r.operadorId).to.eql(null);
+        pm.expect(r.fechaLlamado).to.eql(null);
+      });
+      pm.test('preferente original y efectivo', () => {
+        pm.expect(r.preferenteOriginal).to.eql(true);
+        pm.expect(r.preferenteEfectivo).to.eql(true);
+        pm.expect(r.envejecido).to.eql(false);
+        pm.expect(r.conjuntoEfectivo).to.eql('PREFERENTE');
+      });
+      pm.test('instantánea del nombre de la categoría', () => pm.expect(r.categoriaOriginalNombre).to.eql('Adulto mayor'));
+      pm.test('identificador del cliente tal como se envió', () => pm.expect(r.identificadorCliente).to.eql('CC 1088345 - Maria L.'));
+    language: text/javascript
+order: 37200

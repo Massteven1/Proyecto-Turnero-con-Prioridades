@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  EN_ESPERA -> CANCELADO con motivo: estado terminal, sin asignación de módulo
+  ni operador, con la marca de tiempo y el motivo persistidos.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoCancelableId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"CANCELADO","motivo":"Cliente se retira de la sala"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('estado CANCELADO', () => pm.expect(r.estado).to.eql('CANCELADO'));
+      pm.test('guarda motivo y fecha de cancelación', () => {
+        pm.expect(r.motivoCancelacionAusencia).to.eql('Cliente se retira de la sala');
+        pm.expect(r.fechaCancelacionAusencia).to.not.eql(null);
+      });
+      pm.test('nunca se asignó a módulo ni operador', () => {
+        pm.expect(r.moduloId).to.eql(null);
+        pm.expect(r.operadorId).to.eql(null);
+      });
+    language: text/javascript
+order: 38400

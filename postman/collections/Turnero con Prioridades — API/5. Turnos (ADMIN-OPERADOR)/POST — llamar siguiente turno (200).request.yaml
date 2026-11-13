@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Llamado atómico del siguiente turno del servicio del módulo. Con un único turno
+  preferente en la cola, lo asigna al módulo y a la cuenta del JWT y deja el
+  contador de preferentes en 1. Guarda {{turnoLlamadoId}}.
+
+  Llama {{token}} (ADMIN) a propósito: en la semilla operador1 y operador2 ya
+  tienen turno activo y el contrato impide a una cuenta llamar con otro vigente.
+url: "{{baseUrl}}/api/v1/modulos/{{turnoModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('campos del SiguienteTurnoResponseDTO', () => pm.expect(r).to.have.all.keys('colaVacia', 'mensaje', 'turno', 'contadorPreferentesActual'));
+      pm.test('hay turno llamado', () => pm.expect(r.colaVacia).to.eql(false));
+      pm.test('llama al turno emitido', () => {
+        pm.expect(String(r.turno.id)).to.eql(pm.collectionVariables.get('turnoEmitidoId'));
+        pm.expect(r.turno.codigo).to.eql(pm.collectionVariables.get('turnoEmitidoCodigo'));
+      });
+      pm.test('queda LLAMADO con el módulo y el operador del JWT', () => {
+        pm.expect(r.turno.estado).to.eql('LLAMADO');
+        pm.expect(String(r.turno.moduloId)).to.eql(pm.collectionVariables.get('turnoModuloId'));
+        pm.expect(r.turno.operadorUsername).to.eql('admin');
+        pm.expect(r.turno.fechaLlamado).to.not.eql(null);
+      });
+      pm.test('contador de preferentes en 1', () => pm.expect(r.contadorPreferentesActual).to.eql(1));
+      pm.collectionVariables.set('turnoLlamadoId', String(r.turno.id));
+    language: text/javascript
+order: 37600

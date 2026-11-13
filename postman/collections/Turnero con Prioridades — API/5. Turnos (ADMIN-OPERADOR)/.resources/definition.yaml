@@ -1,0 +1,30 @@
+$kind: collection
+description: |-
+  Emisión, llamado y transiciones de turnos — Fase 3.
+  Cubre POST /api/v1/turnos, POST /api/v1/modulos/{id}/siguiente y
+  PATCH /api/v1/turnos/{id}/estado, con ADMIN y OPERADOR.
+
+  Requisitos antes de correrlo:
+  - Ejecutar "Login OK — admin (guarda token)" (carpeta 1): guarda {{token}}.
+  - Ejecutar "Login OK — operador1" (carpeta 1): guarda {{tokenOperador}}.
+
+  La carpeta crea su propio servicio y módulo de pruebas, así que no consume
+  turnos de la semilla y el consecutivo arranca en 001 en cada corrida.
+
+  Las emisiones usan {{tokenOperador}} (un OPERADOR puede emitir aunque tenga un
+  turno activo). El llamado y las transiciones del turno llamado usan {{token}}
+  porque en la semilla operador1 y operador2 ya tienen turno vigente y el
+  contrato impide llamar con otro activo.
+
+  Correr los requests de arriba hacia abajo: cada uno guarda las variables del
+  siguiente ({{turnoServicioId}}, {{turnoModuloId}}, {{turnoEmitidoId}}, ...).
+
+  Fuera de la colección quedan dos casos de la Fase 3, cubiertos por la batería E2E:
+  un OPERADOR cancela un turno EN_ESPERA de una fecha anterior (403) y el
+  OPERADOR asignado mueve su propio turno LLAMADO/EN_ATENCION (200).
+
+  Limpieza: los turnos y su historial son inmutables (triggers de la base), así que
+  el servicio de pruebas queda como residuo y no se puede borrar por SQL. Para
+  volver al estado inicial, recargar la semilla:
+  DROP DATABASE IF EXISTS banco_turnero_db; y volver a ejecutar db/banco_turnero_db.sql.
+order: 5000

@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Con la cola del servicio vacía, el llamado responde 200 (no 404): colaVacia
+  en true, turno en null y el contador de preferentes no cambia.
+url: "{{baseUrl}}/api/v1/modulos/{{turnoModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('cola vacía sin turno', () => {
+        pm.expect(r.colaVacia).to.eql(true);
+        pm.expect(r.turno).to.eql(null);
+      });
+      pm.test('el contador no se altera', () => pm.expect(r.contadorPreferentesActual).to.eql(1));
+    language: text/javascript
+order: 38100

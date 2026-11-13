@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  Tercer turno del servicio, para el caso de propiedad: se llama con la cuenta
+  ADMIN y después operador2 intenta operarlo. Guarda {{turnoAjenoId}}.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 9013 - Julia M.","servicioId":{{turnoServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('turnoAjenoId', String(r.id));
+      pm.test('consecutivo diario 003', () => pm.expect(r.consecutivo).to.eql(3));
+      pm.test('nace EN_ESPERA', () => pm.expect(r.estado).to.eql('EN_ESPERA'));
+    language: text/javascript
+order: 38500
