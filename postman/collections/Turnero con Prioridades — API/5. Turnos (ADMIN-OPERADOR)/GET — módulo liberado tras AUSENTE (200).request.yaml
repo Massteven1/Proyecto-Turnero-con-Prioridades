@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  AUSENTE no es un estado activo: la consulta de módulos debe devolver el módulo
+  del servicio como libre (ocupado=false, turnoActivoCodigo=null).
+url: "{{baseUrl}}/api/v1/modulos?servicioId={{turnoServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const modulo = r.find(m => String(m.id) === pm.collectionVariables.get('turnoModuloId'));
+      pm.test('el módulo quedó libre tras AUSENTE', () => {
+        pm.expect(modulo).to.not.eql(undefined);
+        pm.expect(modulo.ocupado).to.eql(false);
+        pm.expect(modulo.turnoActivoCodigo).to.eql(null);
+      });
+    language: text/javascript
+order: 39200

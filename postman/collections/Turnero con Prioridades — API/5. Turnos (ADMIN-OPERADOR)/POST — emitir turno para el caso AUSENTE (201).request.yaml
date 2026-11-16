@@ -1,0 +1,22 @@
+$kind: http-request
+description: |-
+  Cuarto turno del servicio, para el caso AUSENTE: se llama y se marca AUSENTE
+  con motivo, y el módulo debe quedar libre. Guarda {{turnoAusenteId}}.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 9021 - Marta L.","servicioId":{{turnoServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('turnoAusenteId', String(r.id));
+      pm.test('consecutivo diario 004', () => pm.expect(r.consecutivo).to.eql(4));
+      pm.test('nace EN_ESPERA', () => pm.expect(r.estado).to.eql('EN_ESPERA'));
+    language: text/javascript
+order: 38900

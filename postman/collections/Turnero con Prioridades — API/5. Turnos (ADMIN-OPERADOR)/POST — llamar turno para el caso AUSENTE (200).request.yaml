@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  ADMIN llama el cuarto turno para poder marcarlo AUSENTE. Mientras está
+  LLAMADO el módulo permanece ocupado.
+url: "{{baseUrl}}/api/v1/modulos/{{turnoModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('llama el turno del caso AUSENTE', () => {
+        pm.expect(r.colaVacia).to.eql(false);
+        pm.expect(String(r.turno.id)).to.eql(pm.collectionVariables.get('turnoAusenteId'));
+        pm.expect(r.turno.estado).to.eql('LLAMADO');
+        pm.expect(String(r.turno.moduloId)).to.eql(pm.collectionVariables.get('turnoModuloId'));
+      });
+    language: text/javascript
+order: 39000

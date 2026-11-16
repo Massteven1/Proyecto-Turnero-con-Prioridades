@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  LLAMADO -> AUSENTE exige motivo (5 a 255 caracteres) y registra la fecha de
+  ausencia en la misma columna que CANCELADO.
+url: "{{baseUrl}}/api/v1/turnos/{{turnoAusenteId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"AUSENTE","motivo":"El cliente no respondió al llamado"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('estado AUSENTE con motivo', () => {
+        pm.expect(r.estado).to.eql('AUSENTE');
+        pm.expect(r.motivoCancelacionAusencia).to.eql('El cliente no respondió al llamado');
+        pm.expect(r.fechaCancelacionAusencia).to.not.eql(null);
+      });
+    language: text/javascript
+order: 39100
