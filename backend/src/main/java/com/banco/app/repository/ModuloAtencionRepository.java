@@ -28,8 +28,18 @@ public interface ModuloAtencionRepository extends JpaRepository<ModuloAtencion, 
     List<ModuloAtencion> buscar(@Param("servicioId") Long servicioId,
             @Param("activo") Boolean activo);
 
+    // Servicio actual de un modulo leido sin bloqueo. Devuelve un escalar y no
+    // la entidad a proposito: una entidad administrada se reutiliza al pedir
+    // despues findByIdForUpdate y Hibernate la devuelve con los valores previos
+    // a la espera del bloqueo (snapshot REPEATABLE_READ), no con la fila viva.
+    @Query("select m.servicioId from ModuloAtencion m where m.id = :id")
+    Optional<Long> buscarServicioId(@Param("id") Long id);
+
     // Bloqueo pesimista de la fila del modulo, siempre despues de los servicios
-    // implicados y antes de las filas de estado de cola (orden global).
+    // implicados y antes de las filas de estado de cola (orden global). Si el id
+    // ya esta administrado en el contexto de persistencia, esa instancia se
+    // devuelve sin refrescar: la lectura previa debe ser un escalar o
+    // desvincularse antes de bloquear.
     @Query(value = "SELECT * FROM modulos_atencion WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<ModuloAtencion> findByIdForUpdate(@Param("id") Long id);
 

@@ -98,15 +98,16 @@ public class ModuloService {
     public ModuloDTO actualizar(Long id, ModuloUpdateDTO peticion) {
         String nombre = normalizarNombre(peticion.getNombre());
 
-        // Lectura previa solo para conocer el servicio actual: los bloqueos se
-        // toman despues, en el orden global que exige el contrato.
-        ModuloAtencion previo = moduloAtencionRepository.findById(id)
+        // Lectura previa sin bloqueo y como escalar: solo se necesita el servicio
+        // actual para fijar el orden global de bloqueos y detectar un cambio
+        // concurrente al revalidar (ver ModuloAtencionRepository).
+        Long servicioPrevio = moduloAtencionRepository.buscarServicioId(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Módulo no encontrado"));
 
-        boolean cambiaServicio = !peticion.getServicioId().equals(previo.getServicioId());
+        boolean cambiaServicio = !peticion.getServicioId().equals(servicioPrevio);
         List<Long> serviciosImplicados = cambiaServicio
-                ? List.of(previo.getServicioId(), peticion.getServicioId())
-                : List.of(previo.getServicioId());
+                ? List.of(servicioPrevio, peticion.getServicioId())
+                : List.of(servicioPrevio);
 
         // Orden global de bloqueos: servicios implicados por id ascendente,
         // despues el modulo y al final los estados de cola por servicioId
@@ -123,7 +124,7 @@ public class ModuloService {
         // Si otro proceso movio el modulo entre la lectura previa y el bloqueo,
         // los servicios bloqueados no cubren su servicio real: se aborta para
         // no operar sobre un estado inconsistente.
-        if (!Objects.equals(modulo.getServicioId(), previo.getServicioId())) {
+        if (!Objects.equals(modulo.getServicioId(), servicioPrevio)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "El módulo cambió de servicio durante la operación; vuelva a intentarlo");
         }

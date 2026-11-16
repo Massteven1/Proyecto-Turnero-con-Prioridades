@@ -38,6 +38,10 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     // Fase 3: bloqueo del turno candidato antes de pasarlo a LLAMADO y del
     // turno objetivo antes de cambiar su estado. SQL nativo a proposito:
     // Hibernate 7 genera "FOR UPDATE OF <alias>" en HQL y MariaDB lo rechaza.
+    // Si el turno ya esta administrado en el contexto de persistencia, el
+    // bloqueo se toma pero se devuelve la instancia con los valores previos a
+    // la espera: desvincularla antes (entityManager.detach) es obligatorio para
+    // revalidar con la fila viva.
     @Query(value = "SELECT * FROM turnos WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<Turno> findByIdForUpdate(@Param("id") Long id);
 

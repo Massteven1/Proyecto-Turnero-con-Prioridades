@@ -158,9 +158,9 @@ public class TurnoService {
     // POST /api/v1/modulos/{id}/siguiente
     @Transactional
     public SiguienteTurnoResponseDTO llamarSiguiente(Long moduloId, Long actorId, boolean administrador) {
-        // Lectura previa sin bloqueo: solo para conocer el servicio del modulo.
-        // Los bloqueos se toman despues en el orden global del contrato.
-        ModuloAtencion previo = moduloAtencionRepository.findById(moduloId)
+        // Lectura previa sin bloqueo y como escalar: solo hace falta el
+        // servicio del modulo para fijar el orden global de bloqueos.
+        Long servicioIdModulo = moduloAtencionRepository.buscarServicioId(moduloId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Módulo no encontrado"));
 
         Usuario actor = usuarioRepository.findByIdForUpdate(actorId)
@@ -168,7 +168,7 @@ public class TurnoService {
                         "La cuenta no existe o está inactiva"));
         validarCuentaVigente(actor, administrador);
 
-        Servicio servicio = servicioRepository.findByIdForUpdate(previo.getServicioId())
+        Servicio servicio = servicioRepository.findByIdForUpdate(servicioIdModulo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Servicio no encontrado"));
         ModuloAtencion modulo = moduloAtencionRepository.findByIdForUpdate(moduloId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Módulo no encontrado"));
@@ -183,7 +183,7 @@ public class TurnoService {
         // Si otro proceso movio el modulo entre la lectura y el bloqueo, el
         // servicio bloqueado no es el suyo: se aborta para no operar sobre un
         // estado inconsistente.
-        if (!Objects.equals(modulo.getServicioId(), servicio.getId())) {
+        if (!Objects.equals(modulo.getServicioId(), servicioIdModulo)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "El módulo cambió de servicio durante la operación; vuelva a intentarlo");
         }
@@ -249,7 +249,11 @@ public class TurnoService {
         }
 
         // Bloqueo y revalidacion del candidato: otro operador pudo llamarlo
-        // mientras esta transaccion esperaba los bloqueos anteriores.
+        // mientras esta transaccion esperaba los bloqueos anteriores. La
+        // instancia que trajo la cola se desvincula antes del SQL nativo; si
+        // quedara administrada, el bloqueo se tomaria pero Hibernate devolveria
+        // su estado previo a la espera.
+        entityManager.detach(elegido);
         Turno turno = turnoRepository.findByIdForUpdate(elegido.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
                         "El turno seleccionado ya no está disponible"));
@@ -322,12 +326,9 @@ public class TurnoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "El servicio no tiene fila de estado de cola"));
 
-        // Bloqueo pesimista del turno objetivo con relectura viva. La lectura
-        // previa se desvincula del contexto de persistencia y el turno se vuelve
-        // a leer con el SQL nativo FOR UPDATE: el locking read de MariaDB
-        // ignora la instantanea de REPEATABLE_READ, y al no haber instancia
-        // gestionada Hibernate hidrata la fila viva (sin refrescar, devolveria
-        // los valores leidos antes de esperar los bloqueos).
+        // Se conservan los datos con los que se eligieron las cuentas implicadas y
+        // se desvincula la lectura previa antes de releer el turno con FOR UPDATE
+        // (ver TurnoRepository.findByIdForUpdate).
         EstadoTurno estadoPrevio = previo.getEstado();
         Long operadorPrevio = previo.getOperadorId();
         LocalDate fechaPrevia = previo.getFechaOperacion();
