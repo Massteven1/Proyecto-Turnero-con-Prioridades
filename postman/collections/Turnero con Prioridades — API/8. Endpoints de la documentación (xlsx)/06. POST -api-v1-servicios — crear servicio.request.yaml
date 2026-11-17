@@ -1,0 +1,36 @@
+$kind: http-request
+name: 06. POST /api/v1/servicios — crear servicio
+description: |-
+  Contrato: ADMIN. Crea el servicio activo y, en la misma transacción, su fila 1:1 de estado de cola (15 minutos y proporción 3:1). 409 si el prefijo o el nombre ya existen.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / POST — crear servicio (201)». Prefijo DOC + 4 letras aleatorias; guarda {{docServicioId}}.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"{{docServicioPrefijo}}","nombre":"{{docServicioNombre}}","descripcion":"Servicio de la carpeta de documentación"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let prefijo = 'DOC';
+      for (let i = 0; i < 4; i++) {
+        prefijo += letras.charAt(Math.floor(Math.random() * letras.length));
+      }
+      pm.collectionVariables.set('docServicioPrefijo', prefijo);
+      pm.collectionVariables.set('docServicioNombre', 'Servicio Documentacion ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('docServicioId', String(r.id));
+      pm.test('nace activo con el prefijo enviado', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('docServicioPrefijo'));
+      });
+      pm.test('campos del ServicioDTO', () => pm.expect(r).to.have.all.keys('id', 'codigoPrefijo', 'nombre', 'descripcion', 'activo'));
+    language: text/javascript
+order: 6000

@@ -1,0 +1,25 @@
+$kind: http-request
+name: 07. PUT /api/v1/servicios/{id} — actualizar servicio
+description: |-
+  Contrato: ADMIN. Cambia nombre, descripción y estado; codigoPrefijo es inmutable. Desactivar responde 409 con turnos EN_ESPERA de hoy o LLAMADO/EN_ATENCION y, si procede, desactiva sus módulos.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / PUT — renombrar servicio (200)».
+url: "{{baseUrl}}/api/v1/servicios/{{docServicioId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"{{docServicioNombre}} Renombrado","descripcion":"Renombrado por la carpeta de documentación","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre actualizado y prefijo intacto', () => {
+        pm.expect(r.nombre).to.eql(pm.collectionVariables.get('docServicioNombre') + ' Renombrado');
+        pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('docServicioPrefijo'));
+        pm.expect(r.activo).to.eql(true);
+      });
+    language: text/javascript
+order: 7000

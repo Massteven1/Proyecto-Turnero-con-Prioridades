@@ -1,0 +1,24 @@
+$kind: http-request
+name: 05. GET /api/v1/servicios — listar servicios
+description: |-
+  Contrato: ADMIN y OPERADOR. ADMIN filtra con ?activo=true|false o recibe todos; OPERADOR solo recibe activos (403 si pide activo=false).
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / GET — lista de servicios (ADMIN)».
+url: "{{baseUrl}}/api/v1/servicios"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('la semilla trae CAJ y ASE', () => pm.expect(r.map(s => s.codigoPrefijo)).to.include.members(['CAJ', 'ASE']));
+      pm.test('campos del ServicioDTO', () => {
+        r.forEach(s => pm.expect(s).to.have.all.keys('id', 'codigoPrefijo', 'nombre', 'descripcion', 'activo'));
+      });
+      pm.test('orden ascendente por id', () => {
+        const ids = r.map(s => s.id);
+        pm.expect(ids).to.eql([...ids].sort((a, b) => a - b));
+      });
+    language: text/javascript
+order: 5000

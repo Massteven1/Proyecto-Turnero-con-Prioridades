@@ -1,0 +1,26 @@
+$kind: http-request
+name: 08. GET /api/v1/modulos — listar módulos
+description: |-
+  Contrato: ADMIN y OPERADOR. Filtro opcional ?servicioId; ?activo solo para ADMIN (403 si un OPERADOR pide activo=false). Indica si cada módulo está ocupado y con qué turno.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / GET — lista de módulos con ocupación (200)».
+url: "{{baseUrl}}/api/v1/modulos"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('es un array con los módulos de la semilla', () => {
+        pm.expect(r).to.be.an('array');
+        pm.expect(r.map(m => m.id)).to.include.members([1, 2, 3]);
+      });
+      pm.test('campos del ModuloDTO', () => {
+        r.forEach(m => pm.expect(m).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoId', 'turnoActivoCodigo'));
+      });
+      pm.test('ocupado coincide con tener turno activo', () => {
+        r.forEach(m => pm.expect(m.ocupado).to.eql(m.turnoActivoCodigo !== null));
+      });
+    language: text/javascript
+order: 8000

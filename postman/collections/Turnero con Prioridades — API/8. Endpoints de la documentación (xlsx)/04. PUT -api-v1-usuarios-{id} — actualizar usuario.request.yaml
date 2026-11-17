@@ -1,0 +1,30 @@
+$kind: http-request
+name: 04. PUT /api/v1/usuarios/{id} — actualizar usuario
+description: |-
+  Contrato: ADMIN. Actualiza nombre, contraseña, rol o estado; el username es inmutable y password null u omitido conserva el hash.
+  409 al desactivar o cambiar el rol de una cuenta con turno activo y al desactivar o degradar al último ADMIN activo.
+  Copia de «3. Usuarios (ADMIN) / PUT — actualizar nombre y contraseña», con password null para conservar la contraseña de la cuenta.
+url: "{{baseUrl}}/api/v1/usuarios/{{docUsuarioId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombreCompleto":"{{docUsuarioNombre}} Actualizado","password":null,"rol":"OPERADOR","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre actualizado y username inmutable', () => {
+        pm.expect(r.nombreCompleto).to.eql(pm.collectionVariables.get('docUsuarioNombre') + ' Actualizado');
+        pm.expect(r.username).to.eql(pm.collectionVariables.get('docUsername'));
+      });
+      pm.test('sigue activo como OPERADOR', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.rol).to.eql('OPERADOR');
+      });
+      pm.test('sin passwordHash en la respuesta', () => pm.expect(r).to.not.have.property('passwordHash'));
+    language: text/javascript
+order: 4000

@@ -1,0 +1,44 @@
+$kind: http-request
+name: 15. POST /api/v1/turnos — registrar turno
+description: |-
+  Contrato: OPERADOR y ADMIN. El servidor genera el código PREFIJO-YYYYMMDD-NNN, el estado EN_ESPERA y la fecha de ingreso, y registra la transición inicial con el usuario del JWT.
+  Copia de «5. Turnos (ADMIN-OPERADOR) / POST — emitir turno preferente (201)». Lo emite el OPERADOR de la petición 03 en el servicio de la 06; guarda {{docTurnoId}}.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{docTokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 1099001 - Demo Doc","servicioId":{{docServicioId}},"categoriaId":3}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('docTurnoId', String(r.id));
+      pm.collectionVariables.set('docTurnoCodigo', r.codigo);
+      pm.test('campos del TurnoDTO', () => {
+        pm.expect(r).to.have.all.keys('id', 'codigo', 'servicioId', 'servicioNombre', 'categoriaId',
+          'categoriaOriginalNombre', 'preferenteOriginal', 'preferenteEfectivo', 'envejecido',
+          'conjuntoEfectivo', 'moduloId', 'moduloNombre', 'operadorId', 'operadorUsername',
+          'fechaOperacion', 'consecutivo', 'identificadorCliente', 'estado', 'fechaIngreso',
+          'fechaLlamado', 'fechaInicioAtencion', 'fechaFinAtencion', 'fechaCancelacionAusencia',
+          'motivoCancelacionAusencia');
+      });
+      pm.test('código PREFIJO-YYYYMMDD-001 del servicio nuevo', () => {
+        const fecha = r.fechaOperacion.replaceAll('-', '');
+        pm.expect(r.consecutivo).to.eql(1);
+        pm.expect(r.codigo).to.eql(`${pm.collectionVariables.get('docServicioPrefijo')}-${fecha}-001`);
+      });
+      pm.test('nace EN_ESPERA sin módulo ni operador', () => {
+        pm.expect(r.estado).to.eql('EN_ESPERA');
+        pm.expect(r.moduloId).to.eql(null);
+        pm.expect(r.operadorId).to.eql(null);
+      });
+      pm.test('preferente con la instantánea del nombre de la categoría', () => {
+        pm.expect(r.conjuntoEfectivo).to.eql('PREFERENTE');
+        pm.expect(r.categoriaOriginalNombre).to.eql(pm.collectionVariables.get('docCategoriaNombre'));
+      });
+    language: text/javascript
+order: 15000

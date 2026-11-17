@@ -1,0 +1,26 @@
+$kind: http-request
+name: 01. POST /api/v1/auth/login — iniciar sesión
+description: |-
+  Contrato: público (sin JWT). Valida usuario activo y contraseña BCrypt y emite un JWT con sub = usuarioId, claim rol y exp.
+  Copia de «1. Autenticación / Login OK — admin (guarda token)». Guarda el token de admin en {{token}}.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"admin","password":"Admin123!"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.collectionVariables.set('token', r.token);
+      pm.collectionVariables.set('rol', r.rol);
+      pm.collectionVariables.set('usuarioId', String(r.usuarioId));
+      pm.test('campos del AuthResponseDTO', () => pm.expect(r).to.have.all.keys('token', 'tipoToken', 'expiracion', 'usuarioId', 'username', 'nombreCompleto', 'rol'));
+      pm.test('tipoToken es Bearer', () => pm.expect(r.tipoToken).to.eql('Bearer'));
+      pm.test('rol ADMIN', () => pm.expect(r.rol).to.eql('ADMIN'));
+      pm.test('expiracion presente', () => pm.expect(r.expiracion).to.be.a('string'));
+    language: text/javascript
+order: 1000

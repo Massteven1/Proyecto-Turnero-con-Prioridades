@@ -1,0 +1,26 @@
+$kind: http-request
+name: 12. PUT /api/v1/categorias/{id} — renombrar categoría
+description: |-
+  Contrato: ADMIN. Solo cambia el nombre visible (único, 409 si se repite); preferente y activo son inmutables.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / PUT — renombrar categoría (200)». Envía el nombre vigente para no alterar la semilla.
+url: "{{baseUrl}}/api/v1/categorias/3"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nombre":"{{docCategoriaNombre}}"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre, preferente y activo intactos', () => {
+        pm.expect(r.id).to.eql(3);
+        pm.expect(r.nombre).to.eql(pm.collectionVariables.get('docCategoriaNombre'));
+        pm.expect(r.preferente).to.eql(true);
+        pm.expect(r.activo).to.eql(true);
+      });
+    language: text/javascript
+order: 12000

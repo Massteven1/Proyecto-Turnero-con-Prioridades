@@ -1,0 +1,32 @@
+$kind: http-request
+name: 19. GET /api/v1/turnos — cola operativa o historial
+description: |-
+  Contrato: ADMIN y OPERADOR. modo=COLA (por defecto): EN_ESPERA del día del servicio pedido en el orden proyectado, servicioId obligatorio y sin fecha ni estado (400). modo=HISTORIAL: solo ADMIN (403 para OPERADOR), con filtros opcionales fecha, servicioId y estado.
+  Copia de «6. Consulta y Pantalla Pública / GET — cola proyectada del servicio (200)», sobre Caja General (servicio 1 de la semilla).
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId=1"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('solo turnos EN_ESPERA del servicio pedido', () => {
+        pm.expect(r).to.be.an('array');
+        r.forEach(t => {
+          pm.expect(t.estado).to.eql('EN_ESPERA');
+          pm.expect(t.servicioId).to.eql(1);
+        });
+      });
+      pm.test('ordenEnCola consecutivo desde 1', () => {
+        pm.expect(r.map(t => t.ordenEnCola)).to.eql(r.map((t, i) => i + 1));
+      });
+      pm.test('campos del TurnoColaDTO, con identificadorCliente para el personal', () => {
+        r.forEach(t => {
+          pm.expect(t).to.have.all.keys('ordenEnCola', 'id', 'codigo', 'servicioId', 'servicioNombre', 'identificadorCliente', 'categoriaId', 'categoriaOriginalNombre', 'preferenteOriginal', 'preferenteEfectivo', 'envejecido', 'conjuntoEfectivo', 'fechaOperacion', 'fechaIngreso', 'tiempoEsperaMin', 'estado');
+          pm.expect(t.identificadorCliente).to.be.a('string');
+        });
+      });
+    language: text/javascript
+order: 19000

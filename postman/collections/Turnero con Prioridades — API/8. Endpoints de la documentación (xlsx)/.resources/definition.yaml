@@ -1,0 +1,7 @@
+$kind: collection
+description: |-
+  Los 21 endpoints de docs/Endpoints - Proyecto Turnero con Prioridades.xlsx (hoja "Endpoints API"), uno por petición y en el mismo orden de la hoja.
+  Cada petición es una copia del caso exitoso que ya existe en las carpetas 1 a 7; esas carpetas no se modificaron.
+  Para que la carpeta corra sola y se pueda repetir, las copias usan sus propias variables (prefijo doc): crean un usuario OPERADOR, un servicio, un módulo y un turno con nombres únicos por corrida.
+  Correrla en orden, de la 01 a la 21. La 01 inicia sesión como admin y guarda {{token}}; la 03 crea el OPERADOR y guarda su token en {{docTokenOperador}}, que se usa para registrar, llamar y cancelar el turno.
+order: 8000

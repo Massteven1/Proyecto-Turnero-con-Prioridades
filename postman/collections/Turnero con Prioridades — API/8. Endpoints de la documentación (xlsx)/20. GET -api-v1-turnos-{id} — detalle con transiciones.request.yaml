@@ -1,0 +1,34 @@
+$kind: http-request
+name: 20. GET /api/v1/turnos/{id} — detalle con transiciones
+description: |-
+  Contrato: ADMIN cualquier fecha; OPERADOR solo turnos de hoy (403). Todos los campos de TurnoDTO y, al mismo nivel, las transiciones en orden cronológico.
+  Copia de «7. Historial e Indicadores / GET — detalle del turno finalizado (200)», sobre el turno de la petición 15.
+url: "{{baseUrl}}/api/v1/turnos/{{docTurnoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('es el turno de la carpeta, CANCELADO', () => {
+        pm.expect(r.codigo).to.eql(pm.collectionVariables.get('docTurnoCodigo'));
+        pm.expect(r.estado).to.eql('CANCELADO');
+      });
+      pm.test('tres transiciones encadenadas en orden', () => {
+        pm.expect(r.transiciones.map(t => t.estadoNuevo)).to.eql(['EN_ESPERA', 'LLAMADO', 'CANCELADO']);
+        pm.expect(r.transiciones[0].estadoAnterior).to.eql(null);
+        for (let i = 1; i < r.transiciones.length; i++) {
+          pm.expect(r.transiciones[i].estadoAnterior).to.eql(r.transiciones[i - 1].estadoNuevo);
+        }
+      });
+      pm.test('cada transición registra a su actor y la salida su motivo', () => {
+        r.transiciones.forEach(t => {
+          pm.expect(t).to.have.all.keys('id', 'estadoAnterior', 'estadoNuevo', 'fechaCambio', 'operadorUsername', 'motivo');
+          pm.expect(t.operadorUsername).to.eql(pm.collectionVariables.get('docUsername'));
+        });
+        pm.expect(r.transiciones[2].motivo).to.eql('El cliente no se presentó al llamado');
+      });
+    language: text/javascript
+order: 20000

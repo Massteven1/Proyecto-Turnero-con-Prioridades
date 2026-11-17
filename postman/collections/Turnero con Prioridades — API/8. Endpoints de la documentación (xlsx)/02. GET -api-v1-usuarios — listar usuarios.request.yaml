@@ -1,0 +1,29 @@
+$kind: http-request
+name: 02. GET /api/v1/usuarios — listar usuarios
+description: |-
+  Contrato: ADMIN (403 para OPERADOR). Lista activos e inactivos sin passwordHash; admite ?activo=true|false.
+  Copia de «3. Usuarios (ADMIN) / GET — lista de usuarios».
+url: "{{baseUrl}}/api/v1/usuarios"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('es un array con las cuentas semilla', () => {
+        pm.expect(r).to.be.an('array');
+        pm.expect(r.map(u => u.username)).to.include.members(['admin', 'operador1', 'operador2']);
+      });
+      pm.test('passwordHash nunca sale por el API', () => {
+        r.forEach(u => {
+          pm.expect(u).to.not.have.property('passwordHash');
+          pm.expect(u).to.not.have.property('password');
+        });
+      });
+      pm.test('campos del UsuarioDTO', () => {
+        r.forEach(u => pm.expect(u).to.have.all.keys('id', 'username', 'nombreCompleto', 'rol', 'activo'));
+      });
+    language: text/javascript
+order: 2000

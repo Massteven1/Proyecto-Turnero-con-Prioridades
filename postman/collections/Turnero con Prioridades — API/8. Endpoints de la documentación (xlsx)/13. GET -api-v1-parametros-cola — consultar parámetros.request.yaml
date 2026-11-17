@@ -1,0 +1,27 @@
+$kind: http-request
+name: 13. GET /api/v1/parametros-cola — consultar parámetros
+description: |-
+  Contrato: ADMIN y OPERADOR. Umbral de envejecimiento, proporción N:1, último consecutivo y contador vigentes de cada servicio.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / GET — parámetros de cola (200)». Comprueba la fila 1:1 que creó la petición 06.
+url: "{{baseUrl}}/api/v1/parametros-cola"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('campos del EstadoColaDTO', () => {
+        r.forEach(e => pm.expect(e).to.have.all.keys('servicioId', 'servicioPrefijo', 'servicioNombre', 'fechaOperacion', 'ultimoConsecutivo', 'contadorPreferentes', 'umbralEnvejecimientoMin', 'proporcionPreferente'));
+      });
+      pm.test('el servicio nuevo tiene su fila con los valores por defecto', () => {
+        const propio = r.find(e => String(e.servicioId) === pm.collectionVariables.get('docServicioId'));
+        pm.expect(propio).to.not.eql(undefined);
+        pm.expect(propio.umbralEnvejecimientoMin).to.eql(15);
+        pm.expect(propio.proporcionPreferente).to.eql(3);
+        pm.expect(propio.ultimoConsecutivo).to.eql(0);
+        pm.expect(propio.contadorPreferentes).to.eql(0);
+      });
+    language: text/javascript
+order: 13000

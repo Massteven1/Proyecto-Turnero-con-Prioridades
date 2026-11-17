@@ -1,0 +1,35 @@
+$kind: http-request
+name: 18. GET /api/v1/publico/pantalla — pantalla pública
+description: |-
+  Contrato: público (sin JWT). Turnos LLAMADO/EN_ATENCION del día por módulo y hasta 10 EN_ESPERA por servicio en el orden proyectado; sin identificadorCliente ni estados terminales.
+  Copia de «6. Consulta y Pantalla Pública / GET — pantalla pública sin token (200)».
+url: "{{baseUrl}}/api/v1/publico/pantalla"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK sin token', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('campos del PantallaPublicaDTO', () => pm.expect(r).to.have.all.keys('fechaOperacion', 'horaServidor', 'turnosEnModulos', 'proximosEnEspera'));
+      pm.test('sin datos personales', () => {
+        const texto = pm.response.text();
+        pm.expect(texto).to.not.include('identificadorCliente');
+        pm.expect(texto).to.not.include('nombreCompleto');
+        pm.expect(texto).to.not.include('passwordHash');
+      });
+      pm.test('turnosEnModulos solo LLAMADO o EN_ATENCION', () => {
+        r.turnosEnModulos.forEach(t => pm.expect(['LLAMADO', 'EN_ATENCION']).to.include(t.estado));
+      });
+      pm.test('proximosEnEspera solo EN_ESPERA y hasta 10 por servicio', () => {
+        const porServicio = {};
+        r.proximosEnEspera.forEach(t => {
+          pm.expect(t.estado).to.eql('EN_ESPERA');
+          porServicio[t.servicioNombre] = (porServicio[t.servicioNombre] || 0) + 1;
+        });
+        Object.values(porServicio).forEach(n => pm.expect(n).to.be.at.most(10));
+      });
+      pm.test('el turno cancelado de la petición 17 no aparece', () => {
+        pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('docTurnoCodigo'));
+      });
+    language: text/javascript
+order: 18000

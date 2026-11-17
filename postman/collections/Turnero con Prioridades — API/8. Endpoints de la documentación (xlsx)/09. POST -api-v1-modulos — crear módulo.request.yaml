@@ -1,0 +1,31 @@
+$kind: http-request
+name: 09. POST /api/v1/modulos — crear módulo
+description: |-
+  Contrato: ADMIN. El servicio debe existir (404) y estar activo (409); el nombre es único sin distinguir mayúsculas ni espacios exteriores (409).
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / POST — crear módulo (201)», sobre el servicio de la petición 06. Guarda {{docModuloId}}.
+url: "{{baseUrl}}/api/v1/modulos"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{docServicioId}},"nombre":"{{docModuloNombre}}"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      pm.collectionVariables.set('docModuloNombre', 'Modulo Doc ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('docModuloId', String(r.id));
+      pm.test('nace activo y libre en el servicio pedido', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.ocupado).to.eql(false);
+        pm.expect(r.turnoActivoCodigo).to.eql(null);
+        pm.expect(String(r.servicioId)).to.eql(pm.collectionVariables.get('docServicioId'));
+      });
+    language: text/javascript
+order: 9000

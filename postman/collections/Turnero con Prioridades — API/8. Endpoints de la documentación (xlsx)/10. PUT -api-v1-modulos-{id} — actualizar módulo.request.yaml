@@ -1,0 +1,25 @@
+$kind: http-request
+name: 10. PUT /api/v1/modulos/{id} — actualizar módulo
+description: |-
+  Contrato: ADMIN. servicioId es inmutable si el módulo tiene turnos; desactivar responde 409 si está ocupado o es el último activo con cola EN_ESPERA; activar exige servicio activo.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / PUT — renombrar módulo (200)».
+url: "{{baseUrl}}/api/v1/modulos/{{docModuloId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{docServicioId}},"nombre":"{{docModuloNombre}} Principal","activo":true}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('nombre actualizado, activo y libre', () => {
+        pm.expect(r.nombre).to.eql(pm.collectionVariables.get('docModuloNombre') + ' Principal');
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.ocupado).to.eql(false);
+      });
+    language: text/javascript
+order: 10000

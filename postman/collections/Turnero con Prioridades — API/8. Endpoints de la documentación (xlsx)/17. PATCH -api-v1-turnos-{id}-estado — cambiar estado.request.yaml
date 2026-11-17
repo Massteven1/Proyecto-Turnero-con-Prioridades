@@ -1,0 +1,29 @@
+$kind: http-request
+name: 17. PATCH /api/v1/turnos/{id}/estado — cambiar estado
+description: |-
+  Contrato: OPERADOR y ADMIN. Transiciones EN_ATENCION desde LLAMADO, FINALIZADO desde EN_ATENCION, CANCELADO desde EN_ESPERA o LLAMADO y AUSENTE desde LLAMADO; CANCELADO y AUSENTE exigen motivo de 5 a 255 caracteres.
+  Copia de «5. Turnos (ADMIN-OPERADOR) / PATCH — LLAMADO a CANCELADO con motivo (200)». Cancela el turno llamado y deja libres el módulo y la cuenta.
+url: "{{baseUrl}}/api/v1/turnos/{{docTurnoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{docTokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"CANCELADO","motivo":"El cliente no se presentó al llamado"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('estado CANCELADO con motivo y fecha', () => {
+        pm.expect(r.estado).to.eql('CANCELADO');
+        pm.expect(r.motivoCancelacionAusencia).to.eql('El cliente no se presentó al llamado');
+        pm.expect(r.fechaCancelacionAusencia).to.not.eql(null);
+      });
+      pm.test('conserva la asignación del llamado', () => {
+        pm.expect(String(r.moduloId)).to.eql(pm.collectionVariables.get('docModuloId'));
+        pm.expect(r.operadorUsername).to.eql(pm.collectionVariables.get('docUsername'));
+      });
+    language: text/javascript
+order: 17000

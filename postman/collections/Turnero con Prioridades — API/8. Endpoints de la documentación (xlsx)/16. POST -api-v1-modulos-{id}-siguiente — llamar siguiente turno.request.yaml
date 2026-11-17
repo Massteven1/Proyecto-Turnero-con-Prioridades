@@ -1,0 +1,28 @@
+$kind: http-request
+name: 16. POST /api/v1/modulos/{id}/siguiente — llamar siguiente turno
+description: |-
+  Contrato: OPERADOR y ADMIN. Selecciona y llama el siguiente turno EN_ESPERA del día con prioridad, FIFO, envejecimiento y proporción N:1; el operador sale del JWT. 409 si el módulo o la cuenta ya tienen un turno activo. Con la cola vacía responde colaVacia = true.
+  Copia de «5. Turnos (ADMIN-OPERADOR) / POST — llamar siguiente turno (200)». Llama el OPERADOR de la petición 03 en el módulo de la 09.
+url: "{{baseUrl}}/api/v1/modulos/{{docModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{docTokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('campos del SiguienteTurnoResponseDTO', () => pm.expect(r).to.have.all.keys('colaVacia', 'mensaje', 'turno', 'contadorPreferentesActual'));
+      pm.test('llama el turno de la petición 15', () => {
+        pm.expect(r.colaVacia).to.eql(false);
+        pm.expect(String(r.turno.id)).to.eql(pm.collectionVariables.get('docTurnoId'));
+      });
+      pm.test('queda LLAMADO con el módulo y el operador del JWT', () => {
+        pm.expect(r.turno.estado).to.eql('LLAMADO');
+        pm.expect(String(r.turno.moduloId)).to.eql(pm.collectionVariables.get('docModuloId'));
+        pm.expect(r.turno.operadorUsername).to.eql(pm.collectionVariables.get('docUsername'));
+        pm.expect(r.turno.fechaLlamado).to.not.eql(null);
+      });
+      pm.test('un preferente sube el contador de 0 a 1', () => pm.expect(r.contadorPreferentesActual).to.eql(1));
+    language: text/javascript
+order: 16000

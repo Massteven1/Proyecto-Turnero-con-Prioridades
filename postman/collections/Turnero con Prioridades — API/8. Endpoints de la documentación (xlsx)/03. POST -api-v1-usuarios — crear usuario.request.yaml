@@ -1,0 +1,47 @@
+$kind: http-request
+name: 03. POST /api/v1/usuarios — crear usuario
+description: |-
+  Contrato: ADMIN. Crea la cuenta con BCrypt y activo = true; 409 si el username ya existe.
+  Copia de «3. Usuarios (ADMIN) / POST — crear usuario (201)». Crea un OPERADOR con username único (doc_ + timestamp) y guarda {{docUsuarioId}}.
+  Después inicia sesión con esa cuenta y guarda {{docTokenOperador}}: la cuenta nueva no tiene turnos activos, así que puede llamar el turno de la petición 16 en cualquier corrida.
+url: "{{baseUrl}}/api/v1/usuarios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"{{docUsername}}","nombreCompleto":"{{docUsuarioNombre}}","password":"DocPrueba123*","rol":"OPERADOR"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      const sello = Date.now();
+      pm.collectionVariables.set('docUsername', 'doc_' + sello);
+      pm.collectionVariables.set('docUsuarioNombre', 'Operador Documentacion ' + sello);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('docUsuarioId', String(r.id));
+      pm.test('nace activo con rol OPERADOR', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.rol).to.eql('OPERADOR');
+        pm.expect(r.username).to.eql(pm.collectionVariables.get('docUsername'));
+      });
+      pm.test('sin passwordHash en la respuesta', () => pm.expect(r).to.have.all.keys('id', 'username', 'nombreCompleto', 'rol', 'activo'));
+      pm.sendRequest({
+        url: pm.variables.replaceIn('{{baseUrl}}/api/v1/auth/login'),
+        method: 'POST',
+        header: { 'Content-Type': 'application/json' },
+        body: { mode: 'raw', raw: JSON.stringify({ username: pm.collectionVariables.get('docUsername'), password: 'DocPrueba123*' }) }
+      }, (error, respuesta) => {
+        pm.test('la cuenta nueva inicia sesión como OPERADOR', () => {
+          pm.expect(error).to.eql(null);
+          pm.expect(respuesta.code).to.eql(200);
+          pm.expect(respuesta.json().rol).to.eql('OPERADOR');
+        });
+        pm.collectionVariables.set('docTokenOperador', respuesta.json().token);
+      });
+    language: text/javascript
+order: 3000

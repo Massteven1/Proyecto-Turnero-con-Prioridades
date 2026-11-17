@@ -1,0 +1,30 @@
+$kind: http-request
+name: 21. GET /api/v1/turnos/indicadores — indicadores
+description: |-
+  Contrato: ADMIN (403 para OPERADOR). Emitidos, finalizados, cancelados, ausentes, en espera, llamados o en atención y promedio de espera; fecha por defecto hoy y servicioId opcional.
+  Copia de «7. Historial e Indicadores / GET — indicadores acotados al servicio (200)», sobre el servicio de la petición 06 y sin fecha (usa hoy).
+url: "{{baseUrl}}/api/v1/turnos/indicadores?servicioId={{docServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('campos del IndicadoresDTO', () => pm.expect(r).to.have.all.keys('fechaConsulta', 'servicioId', 'totalEmitidos', 'totalFinalizados', 'totalCancelados', 'totalAusentes', 'totalEnEspera', 'totalEnAtencionOLlamado', 'tiempoPromedioEsperaSegundos', 'tiempoPromedioEsperaFormateado'));
+      pm.test('acota el servicio pedido', () => pm.expect(String(r.servicioId)).to.eql(pm.collectionVariables.get('docServicioId')));
+      pm.test('1 emitido y 1 cancelado', () => {
+        pm.expect(r.totalEmitidos).to.eql(1);
+        pm.expect(r.totalCancelados).to.eql(1);
+        pm.expect(r.totalFinalizados).to.eql(0);
+        pm.expect(r.totalAusentes).to.eql(0);
+        pm.expect(r.totalEnEspera).to.eql(0);
+        pm.expect(r.totalEnAtencionOLlamado).to.eql(0);
+      });
+      pm.test('sin turnos atendidos el promedio es null', () => {
+        pm.expect(r.tiempoPromedioEsperaSegundos).to.eql(null);
+        pm.expect(r.tiempoPromedioEsperaFormateado).to.eql(null);
+      });
+    language: text/javascript
+order: 21000

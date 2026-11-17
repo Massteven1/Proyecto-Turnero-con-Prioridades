@@ -1,0 +1,26 @@
+$kind: http-request
+name: 14. PUT /api/v1/parametros-cola/{servicioId} — actualizar parámetros
+description: |-
+  Contrato: ADMIN. umbralEnvejecimientoMin de 1 a 240 y proporcionPreferente de 1 a 10 (400 fuera de rango); si el contador supera la nueva proporción, se ajusta al máximo.
+  Copia de «4. Catálogos (ADMIN-OPERADOR) / PUT — actualizar parámetros de cola (200)», sobre el servicio de la petición 06.
+url: "{{baseUrl}}/api/v1/parametros-cola/{{docServicioId}}"
+method: PUT
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"umbralEnvejecimientoMin":15,"proporcionPreferente":3}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('valores aplicados al servicio pedido', () => {
+        pm.expect(String(r.servicioId)).to.eql(pm.collectionVariables.get('docServicioId'));
+        pm.expect(r.umbralEnvejecimientoMin).to.eql(15);
+        pm.expect(r.proporcionPreferente).to.eql(3);
+        pm.expect(r.contadorPreferentes).to.be.at.most(3);
+      });
+    language: text/javascript
+order: 14000
