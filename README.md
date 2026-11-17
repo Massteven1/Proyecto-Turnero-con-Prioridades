@@ -138,11 +138,18 @@ cd ..\frontend
 npm run build
 ```
 
-Las pruebas del backend usan H2 en memoria (`backend/src/test/resources/application.properties`) para no depender de un MySQL local. La colección de Postman se ejecuta contra el backend en marcha y cubre las fases implementadas.
+Las pruebas del backend usan H2 en memoria (`backend/src/test/resources/application.properties`) para no depender de un MySQL local. Además del arranque del contexto, `mvn test` cubre las reglas que más se rompen:
+
+- `ProyeccionColaTest`: proporción N:1 de preferentes, FIFO de regulares, envejecimiento por umbral y continuidad del contador persistido.
+- `TurnoServiceTransicionTest`: matriz de transiciones (409), propiedad del turno (403), excepción del ADMIN y motivo obligatorio (400).
+- `AuthServiceTest`: el 401 del login es único para usuario inexistente, contraseña incorrecta y cuenta inactiva.
+
+La colección de Postman se ejecuta contra el backend en marcha y cubre las fases implementadas.
 
 ## Seguridad y solución de problemas
 
 - **Logout**: Angular elimina el token del cliente. El JWT emitido sigue siendo criptográficamente válido hasta su `exp` porque el alcance no incluye lista de revocación; en cambio, desactivar la cuenta o cambiar su rol hace que el backend rechace el token en la siguiente petición con 401.
+- **Login sin filtración de cuentas**: `POST /api/v1/auth/login` responde siempre el mismo `401` (`Credenciales inválidas`) para usuario inexistente, contraseña incorrecta o cuenta inactiva. Cuando el usuario no existe se compara igual contra BCrypt con un hash señuelo, para que el tiempo de respuesta tampoco delate si la cuenta existe.
 - **Puerto 8080 ocupado**: identificar y detener el proceso, o levantar en otro puerto.
 
   ```powershell
