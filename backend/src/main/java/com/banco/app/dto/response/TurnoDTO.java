@@ -50,39 +50,46 @@ public class TurnoDTO {
     public static TurnoDTO de(Turno turno, Servicio servicio, Categoria categoria,
             ModuloAtencion modulo, Usuario operador, int umbralEnvejecimientoMin, LocalDateTime ahora) {
         TurnoDTO dto = new TurnoDTO();
-        dto.id = turno.getId();
-        dto.codigo = turno.getCodigo();
-        dto.servicioId = turno.getServicioId();
-        dto.servicioNombre = servicio != null ? servicio.getNombre() : null;
-        dto.categoriaId = turno.getCategoriaId();
-        dto.categoriaOriginalNombre = turno.getCategoriaNombreSnapshot();
+        dto.completar(turno, servicio, categoria, modulo, operador, umbralEnvejecimientoMin, ahora);
+        return dto;
+    }
+
+    // Mapeo compartido con TurnoDetalleDTO: el detalle es exactamente este DTO
+    // mas las transiciones al mismo nivel, asi que no se duplican los campos.
+    protected void completar(Turno turno, Servicio servicio, Categoria categoria,
+            ModuloAtencion modulo, Usuario operador, int umbralEnvejecimientoMin, LocalDateTime ahora) {
+        this.id = turno.getId();
+        this.codigo = turno.getCodigo();
+        this.servicioId = turno.getServicioId();
+        this.servicioNombre = servicio != null ? servicio.getNombre() : null;
+        this.categoriaId = turno.getCategoriaId();
+        this.categoriaOriginalNombre = turno.getCategoriaNombreSnapshot();
 
         boolean preferente = categoria != null && Boolean.TRUE.equals(categoria.getPreferente());
         long esperaMinutos = Duration.between(turno.getFechaIngreso(), ahora).toMinutes();
         boolean envejecido = !preferente && esperaMinutos >= umbralEnvejecimientoMin;
 
-        dto.preferenteOriginal = preferente;
-        dto.envejecido = envejecido;
-        dto.preferenteEfectivo = preferente || envejecido;
-        dto.conjuntoEfectivo = preferente
+        this.preferenteOriginal = preferente;
+        this.envejecido = envejecido;
+        this.preferenteEfectivo = preferente || envejecido;
+        this.conjuntoEfectivo = preferente
                 ? "PREFERENTE"
                 : (envejecido ? "PREFERENTE_ENVEJECIDO" : "REGULAR");
 
-        dto.moduloId = turno.getModuloId();
-        dto.moduloNombre = modulo != null ? modulo.getNombre() : null;
-        dto.operadorId = turno.getOperadorId();
-        dto.operadorUsername = operador != null ? operador.getUsername() : null;
-        dto.fechaOperacion = turno.getFechaOperacion();
-        dto.consecutivo = turno.getConsecutivo();
-        dto.identificadorCliente = turno.getIdentificadorCliente();
-        dto.estado = turno.getEstado();
-        dto.fechaIngreso = turno.getFechaIngreso();
-        dto.fechaLlamado = turno.getFechaLlamado();
-        dto.fechaInicioAtencion = turno.getFechaInicioAtencion();
-        dto.fechaFinAtencion = turno.getFechaFinAtencion();
-        dto.fechaCancelacionAusencia = turno.getFechaCancelacionAusencia();
-        dto.motivoCancelacionAusencia = turno.getMotivoCancelacionAusencia();
-        return dto;
+        this.moduloId = turno.getModuloId();
+        this.moduloNombre = modulo != null ? modulo.getNombre() : null;
+        this.operadorId = turno.getOperadorId();
+        this.operadorUsername = operador != null ? operador.getUsername() : null;
+        this.fechaOperacion = turno.getFechaOperacion();
+        this.consecutivo = turno.getConsecutivo();
+        this.identificadorCliente = turno.getIdentificadorCliente();
+        this.estado = turno.getEstado();
+        this.fechaIngreso = turno.getFechaIngreso();
+        this.fechaLlamado = turno.getFechaLlamado();
+        this.fechaInicioAtencion = turno.getFechaInicioAtencion();
+        this.fechaFinAtencion = turno.getFechaFinAtencion();
+        this.fechaCancelacionAusencia = turno.getFechaCancelacionAusencia();
+        this.motivoCancelacionAusencia = turno.getMotivoCancelacionAusencia();
     }
 
     public Long getId() {

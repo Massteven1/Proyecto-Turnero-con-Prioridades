@@ -1,17 +1,21 @@
 package com.banco.app.service;
 
 import com.banco.app.config.ZonaHoraria;
+import com.banco.app.dto.response.IndicadoresDTO;
 import com.banco.app.dto.response.PantallaPublicaDTO;
 import com.banco.app.dto.response.TurnoColaDTO;
+import com.banco.app.dto.response.TurnoDetalleDTO;
 import com.banco.app.dto.response.TurnoPublicoColaDTO;
 import com.banco.app.dto.response.TurnoPublicoModuloDTO;
 import com.banco.app.dto.response.TurnoResumenDTO;
+import com.banco.app.dto.response.TransicionHistorialDTO;
 import com.banco.app.entity.Categoria;
 import com.banco.app.entity.EstadoColaServicio;
 import com.banco.app.entity.EstadoTurno;
 import com.banco.app.entity.Turno;
 import com.banco.app.repository.CategoriaRepository;
 import com.banco.app.repository.EstadoColaServicioRepository;
+import com.banco.app.repository.HistorialTurnoRepository;
 import com.banco.app.repository.TurnoRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 // Consultas de solo lectura sobre turnos: GET /api/v1/turnos (modo=COLA y
-// modo=HISTORIAL) y GET /api/v1/publico/pantalla. Contrato de las filas 24 y 22
-// del xlsx y de las secciones 4 y 5 de la especificacion.
+// modo=HISTORIAL), GET /api/v1/turnos/{id}, GET /api/v1/turnos/indicadores y
+// GET /api/v1/publico/pantalla. Contrato de las filas 22, 24, 25 y 26 del xlsx.
 //
 // Nada de esta clase escribe en la base: la proyeccion de la cola se calcula en
 // memoria con una copia del contador y de los parametros vigentes.
@@ -43,13 +47,16 @@ public class TurnoConsultaService {
     private final TurnoRepository turnoRepository;
     private final CategoriaRepository categoriaRepository;
     private final EstadoColaServicioRepository estadoColaServicioRepository;
+    private final HistorialTurnoRepository historialTurnoRepository;
 
     public TurnoConsultaService(TurnoRepository turnoRepository,
             CategoriaRepository categoriaRepository,
-            EstadoColaServicioRepository estadoColaServicioRepository) {
+            EstadoColaServicioRepository estadoColaServicioRepository,
+            HistorialTurnoRepository historialTurnoRepository) {
         this.turnoRepository = turnoRepository;
         this.categoriaRepository = categoriaRepository;
         this.estadoColaServicioRepository = estadoColaServicioRepository;
+        this.historialTurnoRepository = historialTurnoRepository;
     }
 
     // GET /api/v1/turnos?modo=COLA&servicioId={id}
@@ -108,6 +115,75 @@ public class TurnoConsultaService {
         return turnoRepository.buscarHistorial(fecha, servicioId, estado).stream()
                 .map(TurnoResumenDTO::de)
                 .toList();
+    }
+
+    // GET /api/v1/turnos/{id}: detalle del turno con su historial cronologico.
+    // ADMIN consulta cualquier fecha; OPERADOR solo los turnos del dia actual
+    // (403 si el turno es de una fecha anterior). El actor no filtra por
+    // pertenencia: el contrato limita por fecha, no por operador asignado.
+    @Transactional(readOnly = true)
+    public TurnoDetalleDTO detalle(Long turnoId, boolean administrador) {
+        Turno turno = turnoRepository.buscarDetallePorId(turnoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Turno no encontrado"));
+
+        LocalDateTime ahora = LocalDateTime.now(ZonaHoraria.ZONA);
+        if (!administrador && !ahora.toLocalDate().equals(turno.getFechaOperacion())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "El turno pertenece a una fecha anterior; solo ADMIN consulta turnos históricos");
+        }
+
+        // Sin fila de parametros el turno no puede marcarse envejecido: el umbral
+        // infinito deja envejecido = false en lugar de inventar un valor.
+        int umbral = estadoColaServicioRepository.findByServicioId(turno.getServicioId())
+                .map(EstadoColaServicio::getUmbralEnvejecimientoMin)
+                .orElse(Integer.MAX_VALUE);
+
+        List<TransicionHistorialDTO> transiciones = historialTurnoRepository
+                .buscarTransicionesDeTurno(turnoId).stream()
+                .map(TransicionHistorialDTO::de)
+                .toList();
+
+        return TurnoDetalleDTO.de(turno, turno.getServicio(), turno.getCategoria(),
+                turno.getModulo(), turno.getOperador(), umbral, ahora, transiciones);
+    }
+
+    // GET /api/v1/turnos/indicadores: exclusivo ADMIN (la ruta ya lo exige con
+    // @PreAuthorize, por eso el servicio no recibe el rol). Los conteos se
+    // agrupan en la base y el promedio se calcula con TIMESTAMPDIFF sobre los
+    // turnos que tienen inicio de atencion.
+    @Transactional(readOnly = true)
+    public IndicadoresDTO indicadores(LocalDate fecha, Long servicioId) {
+        LocalDate fechaConsulta = fecha != null ? fecha : LocalDate.now(ZonaHoraria.ZONA);
+
+        long totalEmitidos = 0;
+        long totalFinalizados = 0;
+        long totalCancelados = 0;
+        long totalAusentes = 0;
+        long totalEnEspera = 0;
+        long totalEnAtencionOLlamado = 0;
+        for (Object[] fila : turnoRepository.contarPorEstado(fechaConsulta, servicioId)) {
+            EstadoTurno estado = (EstadoTurno) fila[0];
+            long cantidad = ((Number) fila[1]).longValue();
+            totalEmitidos += cantidad;
+            switch (estado) {
+                case FINALIZADO -> totalFinalizados += cantidad;
+                case CANCELADO -> totalCancelados += cantidad;
+                case AUSENTE -> totalAusentes += cantidad;
+                case EN_ESPERA -> totalEnEspera += cantidad;
+                case LLAMADO, EN_ATENCION -> totalEnAtencionOLlamado += cantidad;
+            }
+        }
+
+        // avg() devuelve null cuando ningun turno del alcance fue atendido.
+        Object promedio = turnoRepository.promedioEsperaSegundos(fechaConsulta, servicioId);
+        Double promedioSegundos = promedio instanceof Number numero
+                ? numero.doubleValue()
+                : null;
+
+        return IndicadoresDTO.de(fechaConsulta, servicioId, totalEmitidos, totalFinalizados,
+                totalCancelados, totalAusentes, totalEnEspera, totalEnAtencionOLlamado,
+                promedioSegundos);
     }
 
     // GET /api/v1/publico/pantalla (sin JWT).

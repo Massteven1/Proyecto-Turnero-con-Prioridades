@@ -4,8 +4,10 @@ import com.banco.app.config.Roles;
 import com.banco.app.dto.request.CambioEstadoDTO;
 import com.banco.app.dto.request.ModoConsulta;
 import com.banco.app.dto.request.RegistroTurnoDTO;
+import com.banco.app.dto.response.IndicadoresDTO;
 import com.banco.app.dto.response.TurnoColaDTO;
 import com.banco.app.dto.response.TurnoDTO;
+import com.banco.app.dto.response.TurnoDetalleDTO;
 import com.banco.app.dto.response.TurnoResumenDTO;
 import com.banco.app.entity.EstadoTurno;
 import com.banco.app.security.Identidad;
@@ -32,9 +34,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-// Emision, consulta y transiciones de turnos (contrato de las filas 19, 21, 24
-// y 25). El actor se extrae del JWT: nunca se acepta un operadorId enviado por el
-// cliente.
+// Emision, consulta y transiciones de turnos (contrato de las filas 19, 21, 24,
+// 25 y 26). El actor se extrae del JWT: nunca se acepta un operadorId enviado por
+// el cliente.
 @RestController
 @RequestMapping("/api/v1/turnos")
 public class TurnoController {
@@ -93,5 +95,22 @@ public class TurnoController {
                     Roles.esAdministrador(autenticacion)));
         }
         return ResponseEntity.ok(consultaService.cola(servicioId, fecha, estado));
+    }
+
+    // GET /api/v1/turnos/{id}: ADMIN consulta cualquier fecha y OPERADOR solo los
+    // turnos del dia actual (403 si el turno es historico).
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERADOR')")
+    public TurnoDetalleDTO detalle(@PathVariable Long id, Authentication autenticacion) {
+        return consultaService.detalle(id, Roles.esAdministrador(autenticacion));
+    }
+
+    // GET /api/v1/turnos/indicadores: exclusivo ADMIN. El literal gana sobre
+    // /{id} en el patron de rutas, por eso "indicadores" no cae en el detalle.
+    @GetMapping("/indicadores")
+    @PreAuthorize("hasRole('ADMIN')")
+    public IndicadoresDTO indicadores(@RequestParam(name = "fecha", required = false) LocalDate fecha,
+            @RequestParam(name = "servicioId", required = false) Long servicioId) {
+        return consultaService.indicadores(fecha, servicioId);
     }
 }

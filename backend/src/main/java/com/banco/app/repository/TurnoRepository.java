@@ -109,4 +109,42 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     List<Turno> buscarHistorial(@Param("fecha") LocalDate fecha,
             @Param("servicioId") Long servicioId,
             @Param("estado") EstadoTurno estado);
+
+    // GET /turnos/{id}: el turno con todas las relaciones que arma TurnoDTO, en
+    // una sola consulta (modulo y operador pueden ser null mientras espera).
+    @Query("""
+            select t from Turno t
+                join fetch t.servicio
+                left join fetch t.categoria
+                left join fetch t.modulo
+                left join fetch t.operador
+            where t.id = :id
+            """)
+    Optional<Turno> buscarDetallePorId(@Param("id") Long id);
+
+    // GET /turnos/indicadores: un grupo por estado; la suma de los conteos es
+    // totalEmitidos. Se agrupa en la base para no traer filas al servidor.
+    @Query("""
+            select t.estado, count(t)
+            from Turno t
+            where (:fecha is null or t.fechaOperacion = :fecha)
+              and (:servicioId is null or t.servicioId = :servicioId)
+            group by t.estado
+            """)
+    List<Object[]> contarPorEstado(@Param("fecha") LocalDate fecha,
+            @Param("servicioId") Long servicioId);
+
+    // GET /turnos/indicadores: promedio de espera en segundos, solo sobre turnos
+    // con inicio de atencion. TIMESTAMPDIFF es del motor (MariaDB); el driver
+    // devuelve DECIMAL, por eso el retorno conserva el numero sin tiparlo y el
+    // servicio lo convierte con Number.
+    @Query(value = """
+            select avg(timestampdiff(second, fecha_ingreso, fecha_inicio_atencion))
+            from turnos
+            where fecha_inicio_atencion is not null
+              and (:fecha is null or fecha_operacion = :fecha)
+              and (:servicioId is null or servicio_id = :servicioId)
+            """, nativeQuery = true)
+    Object promedioEsperaSegundos(@Param("fecha") LocalDate fecha,
+            @Param("servicioId") Long servicioId);
 }

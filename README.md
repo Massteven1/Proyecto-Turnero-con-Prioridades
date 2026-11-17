@@ -126,6 +126,7 @@ Si la base se inicializó hace horas, todos los turnos en espera habrán envejec
 | 409 al modificar un usuario | El xlsx y la sección transaccional discrepan sobre su alcance | El 409 aplica solo a **desactivar la cuenta o cambiar el rol** de un usuario con turno activo, no a renombrarlo ni a cambiar su contraseña |
 | Consulta de turnos | El contrato describe la cola y el historial como consultas separadas y, sobre el historial, la tabla de permisos del docx contradice la sección del endpoint: la primera deja al OPERADOR consultar la fecha actual y la segunda lo declara exclusivo de ADMIN | `GET /api/v1/turnos` es una sola ruta con `?modo=COLA` (valor por defecto) y `?modo=HISTORIAL`, exclusivo de ADMIN; el xlsx confirma el 403 para OPERADOR |
 | Servicio inexistente en la cola | La fila del xlsx de `GET /api/v1/turnos` enumera 400, 401 y 403, sin 404 | `?modo=COLA` con un `servicioId` que no existe responde **404 Not Found** con `ErrorResponseDTO`, igual que el resto de rutas que reciben un ID por parámetro; un servicio existente sin turnos en espera responde 200 con la lista vacía |
+| Promedio de espera sin turnos atendidos | `IndicadoresDTO` define `tiempoPromedioEsperaSegundos` y su texto formateado, pero no especifica el caso en que ningún turno del alcance registró inicio de atención | Ambos campos viajan en **null** (no `0` ni `"00 min 00 seg"`): sin turnos atendidos no hay promedio que calcular y `AVG` sobre cero filas es nulo; los conteos por estado sí responden en cero |
 
 ## Validación
 
@@ -166,9 +167,8 @@ Implementado:
 - Catálogos: servicios (`GET`, `POST`, `PUT`), módulos (`GET`, `POST`, `PUT`), categorías (`GET`, `PUT`) y parámetros de cola (`GET`, `PUT`), con autorización por rol y bloqueos pesimistas en el orden definido.
 - Turnos: emisión (`POST /api/v1/turnos`) con consecutivo diario y snapshot de categoría, llamado (`POST /api/v1/modulos/{id}/siguiente`) con proporción N:1 y envejecimiento, y transiciones (`PATCH /api/v1/turnos/{id}/estado`) con motivo obligatorio, propiedad del turno e historial de auditoría.
 - Consulta: cola proyectada por servicio (`GET /api/v1/turnos?modo=COLA`), historial con filtros de fecha, servicio y estado (`GET /api/v1/turnos?modo=HISTORIAL`, exclusivo de ADMIN) y pantalla pública sin datos personales (`GET /api/v1/publico/pantalla`).
+- Historial e indicadores: detalle de un turno con sus transiciones cronológicas (`GET /api/v1/turnos/{id}`, ADMIN sobre cualquier fecha y OPERADOR solo sobre el día actual) e indicadores por fecha y servicio con conteos por estado y promedio de espera (`GET /api/v1/turnos/indicadores`, exclusivo de ADMIN).
 
 Pendiente:
 
-- Detalle de un turno con sus transiciones (`GET /api/v1/turnos/{id}`, `TurnoDetalleDTO` y `TransicionHistorialDTO`).
-- Indicadores (`GET /api/v1/turnos/indicadores`, `IndicadoresDTO`).
 - Vistas del frontend Angular y los casos P01–P12 de la colección de Postman, que se completan al cerrar el backend.
