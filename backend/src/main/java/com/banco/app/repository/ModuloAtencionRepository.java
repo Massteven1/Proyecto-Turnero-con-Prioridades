@@ -31,7 +31,8 @@ public interface ModuloAtencionRepository extends JpaRepository<ModuloAtencion, 
     // Servicio actual de un modulo leido sin bloqueo. Devuelve un escalar y no
     // la entidad a proposito: una entidad administrada se reutiliza al pedir
     // despues findByIdForUpdate y Hibernate la devuelve con los valores previos
-    // a la espera del bloqueo (snapshot REPEATABLE_READ), no con la fila viva.
+    // a la espera del bloqueo (instancia del contexto de persistencia), no con
+    // la fila viva.
     @Query("select m.servicioId from ModuloAtencion m where m.id = :id")
     Optional<Long> buscarServicioId(@Param("id") Long id);
 

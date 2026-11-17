@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -94,7 +95,14 @@ public class ModuloService {
         return ModuloDTO.de(guardado, servicio, null);
     }
 
-    @Transactional
+    // READ_COMMITTED a proposito: la primera lectura de este metodo es un
+    // escalar sin bloqueo (hace falta para fijar el orden global de bloqueos),
+    // y en REPEATABLE_READ esa lectura crearia la instantanea ANTES de esperar
+    // los bloqueos. Las validaciones posteriores (ultimo modulo activo, turno
+    // del modulo, cola EN_ESPERA del dia) leerian datos obsoletos y dejarian
+    // pasar un 409 que el contrato exige. Con READ_COMMITTED cada lectura ve
+    // lo ultimo confirmado despues de adquirir el bloqueo correspondiente.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ModuloDTO actualizar(Long id, ModuloUpdateDTO peticion) {
         String nombre = normalizarNombre(peticion.getNombre());
 
