@@ -82,13 +82,17 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
             @Param("estado") EstadoTurno estado, @Param("servicioId") Long servicioId);
 
     // GET /publico/pantalla: turnos LLAMADO / EN_ATENCION del dia con su modulo.
+    // El contrato exige la seccion turnosEnModulos ordenada por fecha_llamado
+    // DESCENDENTE: el llamado mas reciente aparece primero en la pantalla.
+    // El id desempata en descendente para que dos llamados del mismo instante
+    // mantengan un orden estable.
     @Query("""
             select t from Turno t
                 join fetch t.servicio
                 left join fetch t.modulo
             where t.fechaOperacion = :fecha
               and t.estado in :estados
-            order by t.fechaLlamado asc, t.id asc
+            order by t.fechaLlamado desc, t.id desc
             """)
     List<Turno> buscarActivosDelDia(@Param("fecha") LocalDate fecha,
             @Param("estados") Collection<EstadoTurno> estados);
