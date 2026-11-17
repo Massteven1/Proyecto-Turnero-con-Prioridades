@@ -35,6 +35,7 @@ Las credenciales y secretos viven fuera del repositorio. La plantilla completa e
 | `JWT_EXPIRATION_MS` | No (default `7200000`) | Vigencia del token en milisegundos |
 | `LOGIN_MAX_INTENTOS` | No (default `5`) | Fallos de login por username antes del 429 |
 | `LOGIN_VENTANA_MINUTOS` | No (default `15`) | Ventana en minutos del contador de fallos |
+| `SWAGGER_ENABLED` | No (default `true`) | `false` apaga Swagger UI y `/v3/api-docs` |
 
 En PowerShell, antes de levantar el backend:
 

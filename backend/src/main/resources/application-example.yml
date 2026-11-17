@@ -9,6 +9,7 @@
 #   JWT_EXPIRATION_MS (opcional, 7200000 = 2 horas por defecto)
 # Opcionales de endurecimiento:
 #   LOGIN_MAX_INTENTOS, LOGIN_VENTANA_MINUTOS (limite de fallos por username)
+#   SWAGGER_ENABLED (false apaga Swagger UI y /v3/api-docs en produccion)
 # Sintaxis ${VAR:default}: usa la variable de entorno si existe, si no el default.
 # JWT_SECRET no tiene default a proposito: el secreto de firma debe vivir solo
 # en el entorno (o en un application.yml local excluido del repositorio).
@@ -37,3 +38,10 @@ app:
   login:
     max-intentos: ${LOGIN_MAX_INTENTOS:5}
     ventana-minutos: ${LOGIN_VENTANA_MINUTOS:15}
+
+# Swagger UI y /v3/api-docs: apagar en produccion con SWAGGER_ENABLED=false.
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
