@@ -11,6 +11,7 @@ import com.banco.app.dto.response.AuthResponseDTO;
 import com.banco.app.entity.RolUsuario;
 import com.banco.app.entity.Usuario;
 import com.banco.app.repository.UsuarioRepository;
+import com.banco.app.security.LoginThrottle;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ class AuthServiceTest {
     private UsuarioRepository usuarioRepository;
     private JwtService jwtService;
     private PasswordEncoder passwordEncoder;
+    private LoginThrottle loginThrottle;
     private AuthService authService;
 
     @BeforeEach
@@ -40,7 +42,8 @@ class AuthServiceTest {
         usuarioRepository = mock(UsuarioRepository.class);
         jwtService = mock(JwtService.class);
         passwordEncoder = new BCryptPasswordEncoder();
-        authService = new AuthService(usuarioRepository, passwordEncoder, jwtService);
+        loginThrottle = new LoginThrottle(5, 15);
+        authService = new AuthService(usuarioRepository, passwordEncoder, jwtService, loginThrottle);
     }
 
     @Test
@@ -81,6 +84,23 @@ class AuthServiceTest {
         assertThat(respuesta.getToken()).isEqualTo("token-de-prueba");
         assertThat(respuesta.getTipoToken()).isEqualTo("Bearer");
         assertThat(respuesta.getUsername()).isEqualTo("operador1");
+    }
+
+    @Test
+    @DisplayName("tras agotar los intentos responde 429 aunque la contraseña sea correcta")
+    void bloqueaTrasLosIntentosFallidos() {
+        when(usuarioRepository.findByUsername("operador1")).thenReturn(Optional.of(usuario(true)));
+
+        for (int intento = 0; intento < 5; intento++) {
+            catchThrowableOfType(() -> authService.login(login("operador1", "MalaClave123!")),
+                    ResponseStatusException.class);
+        }
+
+        ResponseStatusException error = catchThrowableOfType(
+                () -> authService.login(login("operador1", CLAVE_CORRECTA)), ResponseStatusException.class);
+
+        assertThat(error.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(error.getReason()).contains("Demasiados intentos fallidos");
     }
 
     private ResponseStatusException assertCredencialesInvalidas(LoginRequestDTO peticion) {

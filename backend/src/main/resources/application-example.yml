@@ -7,6 +7,8 @@
 #   DB_URL, DB_USERNAME, DB_PASSWORD (conexion MySQL/MariaDB)
 #   JWT_SECRET (OBLIGATORIA: sin ella la aplicacion no arranca)
 #   JWT_EXPIRATION_MS (opcional, 7200000 = 2 horas por defecto)
+# Opcionales de endurecimiento:
+#   LOGIN_MAX_INTENTOS, LOGIN_VENTANA_MINUTOS (limite de fallos por username)
 # Sintaxis ${VAR:default}: usa la variable de entorno si existe, si no el default.
 # JWT_SECRET no tiene default a proposito: el secreto de firma debe vivir solo
 # en el entorno (o en un application.yml local excluido del repositorio).
@@ -32,3 +34,6 @@ app:
     # Minimo 32 bytes: la aplicacion valida la longitud al arrancar.
     secret: ${JWT_SECRET}
     vigencia-ms: ${JWT_EXPIRATION_MS:7200000}
+  login:
+    max-intentos: ${LOGIN_MAX_INTENTOS:5}
+    ventana-minutos: ${LOGIN_VENTANA_MINUTOS:15}

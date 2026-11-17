@@ -33,6 +33,8 @@ Las credenciales y secretos viven fuera del repositorio. La plantilla completa e
 | `DB_PASSWORD` | No (default vacío) | Contraseña de la base |
 | `JWT_SECRET` | **Sí** | Firma HS256 del token; mínimo 32 bytes en UTF-8 (se valida al arrancar) |
 | `JWT_EXPIRATION_MS` | No (default `7200000`) | Vigencia del token en milisegundos |
+| `LOGIN_MAX_INTENTOS` | No (default `5`) | Fallos de login por username antes del 429 |
+| `LOGIN_VENTANA_MINUTOS` | No (default `15`) | Ventana en minutos del contador de fallos |
 
 En PowerShell, antes de levantar el backend:
 
@@ -150,6 +152,7 @@ La colección de Postman se ejecuta contra el backend en marcha y cubre las fase
 
 - **Logout**: Angular elimina el token del cliente. El JWT emitido sigue siendo criptográficamente válido hasta su `exp` porque el alcance no incluye lista de revocación; en cambio, desactivar la cuenta o cambiar su rol hace que el backend rechace el token en la siguiente petición con 401.
 - **Login sin filtración de cuentas**: `POST /api/v1/auth/login` responde siempre el mismo `401` (`Credenciales inválidas`) para usuario inexistente, contraseña incorrecta o cuenta inactiva. Cuando el usuario no existe se compara igual contra BCrypt con un hash señuelo, para que el tiempo de respuesta tampoco delate si la cuenta existe.
+- **Límite de intentos de login**: tras `LOGIN_MAX_INTENTOS` fallos (5 por defecto) el username queda bloqueado `LOGIN_VENTANA_MINUTOS` (15) y responde `429` con el tiempo restante. El contador se consulta antes de tocar la base y se limpia con un login correcto. Vive en memoria: alcanza para una instancia; con varias haría falta un almacén compartido.
 - **Pantalla pública y tokens vencidos**: `GET /api/v1/publico/pantalla` no depende de la identidad, así que descarta el `Authorization` que envíe el cliente. Un token vencido o inválido no la tumba con 401 (las rutas protegidas sí lo siguen rechazando). Además, el interceptor del frontend (`auth-interceptor.ts`) no adjunta el token a `/publico/pantalla` ni a `/auth/login`.
 - **Puerto 8080 ocupado**: identificar y detener el proceso, o levantar en otro puerto.
 
