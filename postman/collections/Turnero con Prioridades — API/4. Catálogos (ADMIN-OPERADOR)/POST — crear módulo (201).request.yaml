@@ -30,7 +30,7 @@ scripts:
         pm.expect(r.servicioPrefijo).to.eql(pm.collectionVariables.get('servicioPrefijo'));
       });
       pm.test('campos del ModuloDTO', () => {
-        pm.expect(r).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoCodigo');
+        pm.expect(r).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoId', 'turnoActivoCodigo');
       });
     language: text/javascript
 order: 7000

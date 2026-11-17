@@ -19,7 +19,7 @@ scripts:
         pm.expect(m1.turnoActivoCodigo).to.match(/^CAJ-\d{8}-001$/);
       });
       pm.test('campos del ModuloDTO', () => {
-        r.forEach(m => pm.expect(m).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoCodigo'));
+        r.forEach(m => pm.expect(m).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoId', 'turnoActivoCodigo'));
       });
     language: text/javascript
 order: 12000

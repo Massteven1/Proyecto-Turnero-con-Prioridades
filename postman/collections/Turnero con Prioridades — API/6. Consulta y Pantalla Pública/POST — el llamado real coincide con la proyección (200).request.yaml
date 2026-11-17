@@ -21,6 +21,7 @@ scripts:
         pm.expect(r.turno.estado).to.eql('LLAMADO');
         pm.expect(String(r.turno.moduloId)).to.eql(pm.collectionVariables.get('consultaModuloId'));
         pm.collectionVariables.set('consultaLlamadoCodigo', r.turno.codigo);
+        pm.collectionVariables.set('consultaLlamadoId', String(r.turno.id));
       });
       pm.test('el contador de preferentes sube a 1', () => {
         pm.expect(r.contadorPreferentesActual).to.eql(1);

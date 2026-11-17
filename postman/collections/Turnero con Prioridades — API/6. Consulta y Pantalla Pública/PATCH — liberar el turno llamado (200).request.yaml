@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  Cierre de la carpeta: admin cancela el turno que llamó (LLAMADO -> CANCELADO con motivo).
+  Sin este paso la cuenta admin queda con un turno activo y la carpeta 7 recibe 409 al llamar.
+url: "{{baseUrl}}/api/v1/turnos/{{consultaLlamadoId}}/estado"
+method: PATCH
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"nuevoEstado":"CANCELADO","motivo":"Cierre de la carpeta de consulta"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('el turno llamado queda CANCELADO con su motivo', () => {
+        pm.expect(r.codigo).to.eql(pm.collectionVariables.get('consultaLlamadoCodigo'));
+        pm.expect(r.estado).to.eql('CANCELADO');
+        pm.expect(r.motivoCancelacionAusencia).to.eql('Cierre de la carpeta de consulta');
+      });
+    language: text/javascript
+order: 42200
