@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -156,7 +157,16 @@ public class TurnoService {
     }
 
     // POST /api/v1/modulos/{id}/siguiente
-    @Transactional
+    // READ_COMMITTED a proposito: la primera lectura de este metodo es un
+    // escalar sin bloqueo (buscarServicioId, necesario para fijar el orden
+    // global de bloqueos) y en REPEATABLE_READ esa lectura crearia la
+    // instantanea ANTES de esperar los bloqueos. Las validaciones posteriores
+    // (turno activo del operador, turno activo del modulo y cola EN_ESPERA del
+    // dia) leerian datos obsoletos y podrian asignar dos veces el mismo modulo
+    // o el mismo operador, o responder colaVacia cuando si habia turnos. Con
+    // READ_COMMITTED cada lectura ve lo ultimo confirmado despues de adquirir
+    // el bloqueo correspondiente.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public SiguienteTurnoResponseDTO llamarSiguiente(Long moduloId, Long actorId, boolean administrador) {
         // Lectura previa sin bloqueo y como escalar: solo hace falta el
         // servicio del modulo para fijar el orden global de bloqueos.
