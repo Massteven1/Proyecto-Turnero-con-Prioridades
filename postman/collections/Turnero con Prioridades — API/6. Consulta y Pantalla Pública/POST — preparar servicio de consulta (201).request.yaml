@@ -1,0 +1,36 @@
+$kind: http-request
+description: |-
+  Crea el servicio de consulta con prefijo y nombre únicos por corrida. El script
+  previo genera {{consultaServicioPrefijo}} y {{consultaServicioNombre}}; el test
+  guarda {{consultaServicioId}}. El alta crea también su fila 1:1 de estado de
+  cola, con el contador de preferentes en 0.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"{{consultaServicioPrefijo}}","nombre":"{{consultaServicioNombre}}","descripcion":"Servicio de prueba de la consulta de cola"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let prefijo = '';
+      for (let i = 0; i < 4; i++) {
+        prefijo += letras.charAt(Math.floor(Math.random() * letras.length));
+      }
+      pm.collectionVariables.set('consultaServicioPrefijo', prefijo);
+      pm.collectionVariables.set('consultaServicioNombre', 'Servicio Consulta ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('consultaServicioId', String(r.id));
+      pm.test('nace activo con el prefijo enviado', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('consultaServicioPrefijo'));
+      });
+    language: text/javascript
+order: 40000

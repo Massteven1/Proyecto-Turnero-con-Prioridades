@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  La pantalla debe reflejar el llamado: el turno aparece en turnosEnModulos con
+  su ventanilla y ya no figura entre los próximos en espera.
+url: "{{baseUrl}}/api/v1/publico/pantalla"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK sin token', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const codigo = pm.collectionVariables.get('consultaLlamadoCodigo');
+      pm.test('el turno llamado ocupa el módulo de prueba', () => {
+        const enModulo = r.turnosEnModulos.filter(t => t.codigo === codigo);
+        pm.expect(enModulo.length).to.eql(1);
+        pm.expect(enModulo[0].estado).to.eql('LLAMADO');
+        pm.expect(enModulo[0].moduloNombre).to.eql(pm.collectionVariables.get('consultaModuloNombre'));
+        pm.expect(enModulo[0].servicioNombre).to.eql(pm.collectionVariables.get('consultaServicioNombre'));
+      });
+      pm.test('el llamado ya no está entre los próximos', () => {
+        pm.expect(r.proximosEnEspera.map(t => t.codigo)).to.not.include(codigo);
+      });
+      pm.test('los próximos del servicio bajan a 3 y siguen ordenados 1..3', () => {
+        const nombre = pm.collectionVariables.get('consultaServicioNombre');
+        const propios = r.proximosEnEspera.filter(t => t.servicioNombre === nombre);
+        pm.expect(propios.map(t => t.ordenEnCola)).to.eql([1, 2, 3]);
+        pm.expect(propios.map(t => t.codigo)).to.eql([
+          pm.collectionVariables.get('consultaPreferente2Codigo'),
+          pm.collectionVariables.get('consultaPreferente3Codigo'),
+          pm.collectionVariables.get('consultaRegularCodigo')
+        ]);
+      });
+    language: text/javascript
+order: 42100

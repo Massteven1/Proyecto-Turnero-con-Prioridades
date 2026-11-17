@@ -1,0 +1,26 @@
+$kind: http-request
+description: |-
+  Tercer turno preferente (categoría 3, Adulto mayor): consecutivo 004. Con este
+  cierre la cola del servicio queda con 4 turnos: 3 preferentes y 1 regular.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 7004 - Preferente Tres","servicioId":{{consultaServicioId}},"categoriaId":3}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('consultaPreferente3Codigo', r.codigo);
+      pm.test('consecutivo diario 004', () => pm.expect(r.consecutivo).to.eql(4));
+      pm.test('preferente efectivo', () => {
+        pm.expect(r.preferenteEfectivo).to.eql(true);
+        pm.expect(r.conjuntoEfectivo).to.eql('PREFERENTE');
+        pm.expect(r.categoriaOriginalNombre).to.eql('Adulto mayor');
+      });
+    language: text/javascript
+order: 40500

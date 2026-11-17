@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  El contrato habilita la cola para ADMIN y OPERADOR. Con el token de ADMIN debe
+  devolver exactamente la misma proyección que con el de OPERADOR: consultar no
+  altera el contador persistido ni el orden.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId={{consultaServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con token ADMIN', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('misma proyección que con OPERADOR', () => {
+        pm.expect(r.map(t => t.codigo)).to.eql([
+          pm.collectionVariables.get('consultaPreferente1Codigo'),
+          pm.collectionVariables.get('consultaPreferente2Codigo'),
+          pm.collectionVariables.get('consultaPreferente3Codigo'),
+          pm.collectionVariables.get('consultaRegularCodigo')
+        ]);
+        pm.expect(r.map(t => t.ordenEnCola)).to.eql([1, 2, 3, 4]);
+      });
+      pm.test('no expone passwordHash en la cola', () => {
+        pm.expect(pm.response.text()).to.not.include('passwordHash');
+      });
+    language: text/javascript
+order: 40700

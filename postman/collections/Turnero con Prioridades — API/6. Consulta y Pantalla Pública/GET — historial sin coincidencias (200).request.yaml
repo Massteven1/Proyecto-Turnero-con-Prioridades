@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Un filtro sin coincidencias devuelve 200 con lista vacía, nunca 404: el
+  servicio de prueba todavía no tiene turnos finalizados.
+url: "{{baseUrl}}/api/v1/turnos?modo=HISTORIAL&servicioId={{consultaServicioId}}&estado=FINALIZADO"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      pm.test('lista vacía', () => {
+        const r = pm.response.json();
+        pm.expect(r).to.be.an('array').that.is.empty;
+      });
+    language: text/javascript
+order: 41700

@@ -1,0 +1,21 @@
+$kind: http-request
+description: |-
+  En modo COLA el servicioId es obligatorio: sin él la petición es 400 y el
+  ErrorResponseDTO explica el motivo.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO con el motivo', () => {
+        pm.expect(r.status).to.eql(400);
+        pm.expect(r.mensaje).to.include('servicioId');
+        pm.expect(r.ruta).to.eql('/api/v1/turnos');
+        pm.expect(r.timestamp).to.be.a('string');
+      });
+    language: text/javascript
+order: 40800

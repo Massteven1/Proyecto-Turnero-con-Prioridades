@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  Los filtros del historial son opcionales y combinables. Con la fecha de
+  operación y estado=EN_ESPERA quedan los 4 turnos del servicio de prueba.
+url: "{{baseUrl}}/api/v1/turnos?modo=HISTORIAL&servicioId={{consultaServicioId}}&fecha={{consultaFecha}}&estado=EN_ESPERA"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('fecha + servicio + estado acotan a los 4 del servicio', () => {
+        pm.expect(r.length).to.eql(4);
+        r.forEach(t => {
+          pm.expect(t.estado).to.eql('EN_ESPERA');
+          pm.expect(t.fechaOperacion).to.eql(pm.collectionVariables.get('consultaFecha'));
+          pm.expect(String(t.servicioNombre)).to.eql(pm.collectionVariables.get('consultaServicioNombre'));
+        });
+      });
+    language: text/javascript
+order: 41600

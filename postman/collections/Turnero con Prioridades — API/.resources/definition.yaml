@@ -6,6 +6,7 @@ description: |-
   Fase 2a — Usuarios (ADMIN): CRUD, filtros, BCrypt, 409 por turno activo y por último ADMIN, 403 por rol.
   Fase 2b — Catálogos: servicios (alta con estado de cola 1:1, prefijo inmutable, baja con cascada), módulos (nombre único normalizado, ocupación, historial), categorías (solo renombre) y parámetros de cola (rangos y ajuste del contador).
   Fase 3 — Turnos: emisión con consecutivo diario y snapshot de categoría, llamado atómico con prioridad N:1 y envejecimiento, y transiciones de estado con motivo, propiedad del turno y rol.
+  Fase 4a — Consulta: cola proyectada por servicio (modo=COLA), historial con filtros (modo=HISTORIAL, solo ADMIN) y pantalla pública sin datos personales.
   Las siguientes fases agregan sus endpoints aquí mismo.
 variables:
   baseUrl: http://localhost:8080
@@ -31,3 +32,16 @@ variables:
   turnoLlamadoId: ""
   turnoCancelableId: ""
   turnoAjenoId: ""
+  consultaServicioPrefijo: ""
+  consultaServicioNombre: ""
+  consultaServicioId: ""
+  consultaModuloNombre: ""
+  consultaModuloId: ""
+  consultaFecha: ""
+  consultaRegularId: ""
+  consultaRegularCodigo: ""
+  consultaPreferente1Codigo: ""
+  consultaPreferente2Codigo: ""
+  consultaPreferente3Codigo: ""
+  consultaPrimeroProyectadoCodigo: ""
+  consultaLlamadoCodigo: ""

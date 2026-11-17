@@ -1,0 +1,26 @@
+$kind: collection
+description: |-
+  Consulta de turnos y pantalla pública — Fase 4a.
+  Cubre GET /api/v1/turnos (modo=COLA y modo=HISTORIAL) y
+  GET /api/v1/publico/pantalla, con ADMIN y OPERADOR.
+
+  Requisitos antes de correrlo:
+  - Ejecutar "Login OK — admin (guarda token)" (carpeta 1): guarda {{token}}.
+  - Ejecutar "Login OK — operador1" (carpeta 1): guarda {{tokenOperador}}.
+  - Base recién cargada con db/banco_turnero_db.sql: los tests comparan el
+    consecutivo del servicio de prueba y asumen el contador de preferentes en 0.
+
+  La carpeta crea su propio servicio, módulo y cuatro turnos (1 Regular y 3
+  preferentes), así que no consume la cola de la semilla. La cola se consulta
+  con {{tokenOperador}} y el historial con {{token}}, porque el contrato reserva
+  HISTORIAL al rol ADMIN.
+
+  Los turnos se emiten en el orden Regular, preferente 1, 2 y 3 para fijar el
+  FIFO: con el contador en 0 la proyección debe llamar primero a los tres
+  preferentes y dejar el Regular al final. El último request comprueba que el
+  llamado real coincide con el orden proyectado.
+
+  Nota: emitir turnos es irreversible (triggers de la base), así que cada
+  corrida deja residuo. Para repetir los tests, recargar la semilla:
+  DROP DATABASE IF EXISTS banco_turnero_db; y volver a ejecutar db/banco_turnero_db.sql.
+order: 6000

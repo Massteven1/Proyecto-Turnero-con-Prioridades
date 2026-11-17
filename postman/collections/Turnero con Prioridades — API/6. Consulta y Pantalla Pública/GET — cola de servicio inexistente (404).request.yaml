@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  La existencia del servicio se resuelve con su fila 1:1 de estado de cola: un id
+  inexistente devuelve 404 y no una cola vacía.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId=999999"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('404 Not Found', () => pm.response.to.have.status(404));
+      const r = pm.response.json();
+      pm.test('mensaje de servicio no encontrado', () => {
+        pm.expect(r.mensaje).to.include('Servicio no encontrado');
+        pm.expect(r.status).to.eql(404);
+      });
+    language: text/javascript
+order: 41100

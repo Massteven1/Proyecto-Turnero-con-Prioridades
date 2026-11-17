@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Prueba central de la fase: el llamado real debe tomar exactamente el primer
+  turno de la proyección consultada, sin haberla alterado. Usa el token de ADMIN
+  porque en la semilla operador1 y operador2 ya tienen un turno activo.
+url: "{{baseUrl}}/api/v1/modulos/{{consultaModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('cola no vacía y turno devuelto', () => {
+        pm.expect(r.colaVacia).to.eql(false);
+        pm.expect(r.turno).to.be.an('object');
+      });
+      pm.test('llama al primero de la proyección', () => {
+        pm.expect(r.turno.codigo).to.eql(pm.collectionVariables.get('consultaPrimeroProyectadoCodigo'));
+        pm.expect(r.turno.estado).to.eql('LLAMADO');
+        pm.expect(String(r.turno.moduloId)).to.eql(pm.collectionVariables.get('consultaModuloId'));
+        pm.collectionVariables.set('consultaLlamadoCodigo', r.turno.codigo);
+      });
+      pm.test('el contador de preferentes sube a 1', () => {
+        pm.expect(r.contadorPreferentesActual).to.eql(1);
+      });
+    language: text/javascript
+order: 41900

@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  Primer turno preferente (categoría 1, Discapacidad): consecutivo 002. Con el
+  contador en 0 es el primero que la proyección llamaría.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 7002 - Preferente Uno","servicioId":{{consultaServicioId}},"categoriaId":1}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('consultaPreferente1Codigo', r.codigo);
+      pm.test('consecutivo diario 002', () => pm.expect(r.consecutivo).to.eql(2));
+      pm.test('preferente efectivo desde el inicio', () => {
+        pm.expect(r.preferenteOriginal).to.eql(true);
+        pm.expect(r.preferenteEfectivo).to.eql(true);
+        pm.expect(r.envejecido).to.eql(false);
+        pm.expect(r.conjuntoEfectivo).to.eql('PREFERENTE');
+      });
+      pm.test('instantánea de la categoría', () => pm.expect(r.categoriaOriginalNombre).to.eql('Discapacidad'));
+    language: text/javascript
+order: 40300

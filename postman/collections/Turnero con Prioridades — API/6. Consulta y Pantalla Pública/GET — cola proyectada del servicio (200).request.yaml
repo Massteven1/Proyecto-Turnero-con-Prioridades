@@ -1,0 +1,53 @@
+$kind: http-request
+description: |-
+  Cola proyectada del servicio con el contador de preferentes en 0. La selección
+  es la misma que aplica el llamado real, pero en memoria: el orden esperado es
+  preferente 1, 2, 3 y recién después el Regular, con ordenEnCola 1..4.
+  Guarda {{consultaPrimeroProyectadoCodigo}} para compararlo con el llamado real.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId={{consultaServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con token OPERADOR', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const servicio = pm.collectionVariables.get('consultaServicioId');
+      pm.test('4 turnos EN_ESPERA del servicio pedido', () => {
+        pm.expect(r.length).to.eql(4);
+        r.forEach(t => {
+          pm.expect(t.estado).to.eql('EN_ESPERA');
+          pm.expect(String(t.servicioId)).to.eql(servicio);
+        });
+      });
+      pm.test('ordenEnCola consecutivo 1..4', () => {
+        pm.expect(r.map(t => t.ordenEnCola)).to.eql([1, 2, 3, 4]);
+      });
+      pm.test('con el contador en 0 los tres preferentes van primero', () => {
+        pm.expect(r.map(t => t.codigo)).to.eql([
+          pm.collectionVariables.get('consultaPreferente1Codigo'),
+          pm.collectionVariables.get('consultaPreferente2Codigo'),
+          pm.collectionVariables.get('consultaPreferente3Codigo'),
+          pm.collectionVariables.get('consultaRegularCodigo')
+        ]);
+        pm.collectionVariables.set('consultaPrimeroProyectadoCodigo', r[0].codigo);
+      });
+      pm.test('conjunto efectivo de cada turno', () => {
+        pm.expect(r.map(t => t.conjuntoEfectivo)).to.eql(['PREFERENTE', 'PREFERENTE', 'PREFERENTE', 'REGULAR']);
+      });
+      pm.test('nadie envejeció y el Regular conserva su categoría', () => {
+        r.forEach(t => {
+          pm.expect(t.envejecido).to.eql(false);
+          pm.expect(t.preferenteEfectivo).to.eql(t.preferenteOriginal);
+          pm.expect(t.tiempoEsperaMin).to.be.at.least(0);
+        });
+        const regular = r[r.length - 1];
+        pm.expect(regular.preferenteOriginal).to.eql(false);
+        pm.expect(regular.categoriaOriginalNombre).to.eql('Regular');
+      });
+      pm.test('el endpoint protegido sí expone el identificador del cliente', () => {
+        r.forEach(t => pm.expect(t.identificadorCliente).to.be.a('string'));
+      });
+    language: text/javascript
+order: 40600

@@ -1,0 +1,49 @@
+$kind: http-request
+description: |-
+  Pantalla de sala de espera: ruta pública, sin JWT. Devuelve la fecha y hora
+  únicas de la consulta, los turnos que ocupan módulo y hasta 10 turnos en espera
+  por servicio, proyectados con el algoritmo vigente. No expone datos personales.
+url: "{{baseUrl}}/api/v1/publico/pantalla"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK sin token', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('fecha de operación y hora del servidor', () => {
+        pm.expect(r.fechaOperacion).to.eql(pm.collectionVariables.get('consultaFecha'));
+        pm.expect(r.horaServidor).to.be.a('string');
+      });
+      pm.test('sin datos personales ni categorías', () => {
+        const texto = pm.response.text();
+        pm.expect(texto).to.not.include('identificadorCliente');
+        pm.expect(texto).to.not.include('categoriaOriginalNombre');
+        pm.expect(texto).to.not.include('passwordHash');
+      });
+      pm.test('turnosEnModulos solo LLAMADO/EN_ATENCION con módulo y hora de llamado', () => {
+        r.turnosEnModulos.forEach(t => {
+          pm.expect(['LLAMADO', 'EN_ATENCION']).to.include(t.estado);
+          pm.expect(t.moduloNombre).to.be.a('string');
+          pm.expect(t.codigo).to.be.a('string');
+          pm.expect(t.fechaLlamado).to.be.a('string');
+        });
+      });
+      pm.test('la proyección del servicio de prueba es 1..4 con los preferentes primero', () => {
+        const nombre = pm.collectionVariables.get('consultaServicioNombre');
+        const propios = r.proximosEnEspera.filter(t => t.servicioNombre === nombre);
+        pm.expect(propios.map(t => t.ordenEnCola)).to.eql([1, 2, 3, 4]);
+        pm.expect(propios.map(t => t.codigo)).to.eql([
+          pm.collectionVariables.get('consultaPreferente1Codigo'),
+          pm.collectionVariables.get('consultaPreferente2Codigo'),
+          pm.collectionVariables.get('consultaPreferente3Codigo'),
+          pm.collectionVariables.get('consultaRegularCodigo')
+        ]);
+        propios.forEach(t => pm.expect(t.estado).to.eql('EN_ESPERA'));
+      });
+      pm.test('los próximos turnos no repiten ordenEnCola dentro del servicio', () => {
+        const nombre = pm.collectionVariables.get('consultaServicioNombre');
+        const propios = r.proximosEnEspera.filter(t => t.servicioNombre === nombre);
+        pm.expect(new Set(propios.map(t => t.ordenEnCola)).size).to.eql(propios.length);
+      });
+    language: text/javascript
+order: 41800

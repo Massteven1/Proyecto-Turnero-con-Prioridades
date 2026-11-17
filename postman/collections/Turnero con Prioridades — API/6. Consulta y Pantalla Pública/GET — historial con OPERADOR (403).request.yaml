@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  El historial es exclusivo del rol ADMIN. Un OPERADOR autenticado recibe 403
+  aunque no envíe filtros, y el ErrorResponseDTO conserva la forma del contrato.
+url: "{{baseUrl}}/api/v1/turnos?modo=HISTORIAL&servicioId={{consultaServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden con token OPERADOR', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del 403', () => {
+        pm.expect(r.status).to.eql(403);
+        pm.expect(r.mensaje).to.include('ADMIN');
+        pm.expect(r.ruta).to.eql('/api/v1/turnos');
+      });
+    language: text/javascript
+order: 41400

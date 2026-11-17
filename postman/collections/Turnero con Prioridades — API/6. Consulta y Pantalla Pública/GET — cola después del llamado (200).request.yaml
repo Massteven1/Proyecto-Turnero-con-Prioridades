@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Después del llamado la cola queda con 3 turnos y el orden se recalcula con el
+  contador en 1: preferente 2 y 3 primero, y el Regular al llegar al máximo de la
+  proporción.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId={{consultaServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('quedan 3 turnos EN_ESPERA', () => {
+        pm.expect(r.length).to.eql(3);
+        r.forEach(t => pm.expect(t.estado).to.eql('EN_ESPERA'));
+      });
+      pm.test('el llamado ya no está en la cola', () => {
+        const codigos = r.map(t => t.codigo);
+        pm.expect(codigos).to.not.include(pm.collectionVariables.get('consultaLlamadoCodigo'));
+      });
+      pm.test('orden 1..3 con preferente 2, preferente 3 y Regular', () => {
+        pm.expect(r.map(t => t.ordenEnCola)).to.eql([1, 2, 3]);
+        pm.expect(r.map(t => t.codigo)).to.eql([
+          pm.collectionVariables.get('consultaPreferente2Codigo'),
+          pm.collectionVariables.get('consultaPreferente3Codigo'),
+          pm.collectionVariables.get('consultaRegularCodigo')
+        ]);
+        pm.expect(r.map(t => t.conjuntoEfectivo)).to.eql(['PREFERENTE', 'PREFERENTE', 'REGULAR']);
+      });
+    language: text/javascript
+order: 42000

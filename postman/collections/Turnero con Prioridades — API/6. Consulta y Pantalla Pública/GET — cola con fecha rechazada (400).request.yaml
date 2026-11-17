@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  En modo COLA no se admite el filtro fecha: la cola es siempre la del día de
+  operación vigente, así que enviarlo es 400.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId={{consultaServicioId}}&fecha={{consultaFecha}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('el motivo menciona el filtro fecha', () => {
+        pm.expect(r.mensaje).to.include('fecha');
+        pm.expect(r.status).to.eql(400);
+      });
+    language: text/javascript
+order: 40900

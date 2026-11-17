@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  Turno Regular (categoría 4) emitido primero: abre el FIFO y queda al final de
+  la proyección porque el contador de preferentes está en 0. Guarda
+  {{consultaRegularCodigo}} y la fecha de operación del día en {{consultaFecha}}.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 7001 - Regular Consulta","servicioId":{{consultaServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('consultaFecha', r.fechaOperacion);
+      pm.collectionVariables.set('consultaRegularId', String(r.id));
+      pm.collectionVariables.set('consultaRegularCodigo', r.codigo);
+      pm.test('consecutivo diario 001', () => pm.expect(r.consecutivo).to.eql(1));
+      pm.test('regular RECIÉN emitido, sin envejecer', () => {
+        pm.expect(r.estado).to.eql('EN_ESPERA');
+        pm.expect(r.preferenteOriginal).to.eql(false);
+        pm.expect(r.envejecido).to.eql(false);
+        pm.expect(r.conjuntoEfectivo).to.eql('REGULAR');
+        pm.expect(r.categoriaOriginalNombre).to.eql('Regular');
+      });
+    language: text/javascript
+order: 40200

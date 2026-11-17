@@ -1,0 +1,49 @@
+$kind: http-request
+description: |-
+  Historial del servicio de prueba sin filtros de fecha ni estado: devuelve los 4
+  turnos del día ordenados del más reciente al más antiguo. Los que siguen
+  EN_ESPERA no tienen módulo ni operador asignado.
+url: "{{baseUrl}}/api/v1/turnos?modo=HISTORIAL&servicioId={{consultaServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con token ADMIN', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('4 turnos del servicio', () => {
+        pm.expect(r.length).to.eql(4);
+        r.forEach(t => {
+          pm.expect(t.servicioNombre).to.eql(pm.collectionVariables.get('consultaServicioNombre'));
+          pm.expect(t.fechaOperacion).to.eql(pm.collectionVariables.get('consultaFecha'));
+          pm.expect(t.motivoCancelacionAusencia).to.eql(null);
+        });
+      });
+      pm.test('del más reciente al más antiguo', () => {
+        pm.expect(r.map(t => t.codigo)).to.eql([
+          pm.collectionVariables.get('consultaPreferente3Codigo'),
+          pm.collectionVariables.get('consultaPreferente2Codigo'),
+          pm.collectionVariables.get('consultaPreferente1Codigo'),
+          pm.collectionVariables.get('consultaRegularCodigo')
+        ]);
+      });
+      pm.test('el resumen expone la instantánea de la categoría y el cliente', () => {
+        r.forEach(t => {
+          pm.expect(t.categoriaOriginalNombre).to.be.a('string');
+          pm.expect(t.identificadorCliente).to.be.a('string');
+          pm.expect(t.estado).to.eql('EN_ESPERA');
+        });
+      });
+      pm.test('EN_ESPERA sin módulo ni operador', () => {
+        r.forEach(t => {
+          pm.expect(t.moduloNombre).to.eql(null);
+          pm.expect(t.operadorUsername).to.eql(null);
+          pm.expect(t.fechaLlamado).to.eql(null);
+        });
+      });
+      pm.test('no expone passwordHash', () => {
+        pm.expect(pm.response.text()).to.not.include('passwordHash');
+      });
+    language: text/javascript
+order: 41500

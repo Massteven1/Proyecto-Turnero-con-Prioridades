@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  En modo COLA tampoco se admite el filtro estado: la cola solo contiene turnos
+  EN_ESPERA, así que enviarlo es 400.
+url: "{{baseUrl}}/api/v1/turnos?modo=COLA&servicioId={{consultaServicioId}}&estado=EN_ESPERA"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('el motivo menciona el filtro estado', () => {
+        pm.expect(r.mensaje).to.include('estado');
+        pm.expect(r.status).to.eql(400);
+      });
+    language: text/javascript
+order: 41000

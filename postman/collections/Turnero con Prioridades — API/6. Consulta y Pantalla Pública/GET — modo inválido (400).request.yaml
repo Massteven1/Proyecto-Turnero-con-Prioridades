@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  El modo es una enumeración cerrada: cualquier valor que no sea COLA o
+  HISTORIAL es 400 (la comparación es estricta, sin normalizar mayúsculas).
+url: "{{baseUrl}}/api/v1/turnos?modo=OTRO&servicioId={{consultaServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 Bad Request', () => pm.response.to.have.status(400));
+      const r = pm.response.json();
+      pm.test('el mensaje enumera los modos válidos', () => {
+        pm.expect(r.mensaje).to.include('COLA o HISTORIAL');
+        pm.expect(r.status).to.eql(400);
+      });
+    language: text/javascript
+order: 41200
