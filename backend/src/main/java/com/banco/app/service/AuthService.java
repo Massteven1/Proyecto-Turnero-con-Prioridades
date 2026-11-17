@@ -4,6 +4,7 @@ import com.banco.app.dto.request.LoginRequestDTO;
 import com.banco.app.dto.response.AuthResponseDTO;
 import com.banco.app.entity.Usuario;
 import com.banco.app.repository.UsuarioRepository;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,32 +13,42 @@ import org.springframework.web.server.ResponseStatusException;
 
 // Autenticacion del personal bancario (contrato POST /api/v1/auth/login):
 // solo lectura sobre Usuario y verificacion BCrypt del passwordHash.
-// El mensaje de 401 es unico para credenciales invalidas, usuario inexistente
-// o cuenta inactiva: no se filtra informacion de cual fue el motivo.
+// Un unico 401 ("Credenciales invalidas") cubre usuario inexistente,
+// contrasena incorrecta y cuenta inactiva: no se filtra cual fue el motivo.
 @Service
 public class AuthService {
+
+    private static final String CREDENCIALES_INVALIDAS = "Credenciales inválidas";
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    // Hash senuelo: cuando el username no existe se compara igual contra BCrypt
+    // para que el tiempo de respuesta no delate la existencia de la cuenta.
+    private final String hashSenuelo;
+
     public AuthService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.hashSenuelo = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     @Transactional(readOnly = true)
     public AuthResponseDTO login(LoginRequestDTO peticion) {
         Usuario usuario = usuarioRepository.findByUsername(peticion.getUsername()).orElse(null);
 
-        if (usuario == null || !passwordEncoder.matches(peticion.getPassword(), usuario.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
-        }
+        String hash = usuario != null && usuario.getPasswordHash() != null
+                ? usuario.getPasswordHash()
+                : hashSenuelo;
+        boolean coincide = passwordEncoder.matches(peticion.getPassword(), hash);
 
-        // La baja logica impide el login aunque la contrasena sea correcta
-        if (!Boolean.TRUE.equals(usuario.getActivo())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La cuenta está inactiva");
+        // La baja logica impide el login aunque la contrasena sea correcta, pero
+        // responde el mismo mensaje: distinguir "cuenta inactiva" permitiria
+        // enumerar cuentas validas sin conocer la contrasena.
+        if (usuario == null || !coincide || !Boolean.TRUE.equals(usuario.getActivo())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, CREDENCIALES_INVALIDAS);
         }
 
         return AuthResponseDTO.de(usuario, jwtService.generar(usuario));
