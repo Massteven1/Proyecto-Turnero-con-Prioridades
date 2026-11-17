@@ -25,6 +25,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -43,6 +45,10 @@ public class SecurityConfig {
 
     // HS256 usa una clave de 256 bits: menos de 32 bytes debilita la firma.
     private static final int BYTES_MINIMOS_SECRETO = 32;
+
+    // Rutas que no dependen de la identidad: un token vencido o invalido se
+    // ignora en lugar de tumbar la peticion con 401.
+    private static final List<String> RUTAS_SIN_TOKEN = List.of("/api/v1/publico/pantalla");
 
     @Value("${app.jwt.secret}")
     private String secreto;
@@ -63,6 +69,7 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2
+                .bearerTokenResolver(bearerTokenResolver())
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 .authenticationEntryPoint(new JsonAuthenticationEntryPoint(objectMapper))
                 .accessDeniedHandler(new JsonAccessDeniedHandler(objectMapper)))
@@ -126,5 +133,18 @@ public class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(roles);
         return converter;
+    }
+
+    // En las rutas sin identidad no se extrae el token: la peticion sigue como
+    // anonima y permitAll la deja pasar. Asi la pantalla publica no responde 401
+    // cuando el cliente arrastra un token vencido o con la firma alterada.
+    @Bean
+    public BearerTokenResolver bearerTokenResolver() {
+        BearerTokenResolver estandar = new DefaultBearerTokenResolver();
+        return request -> esRutaSinToken(request.getRequestURI()) ? null : estandar.resolve(request);
+    }
+
+    private static boolean esRutaSinToken(String ruta) {
+        return RUTAS_SIN_TOKEN.stream().anyMatch(ruta::equals);
     }
 }

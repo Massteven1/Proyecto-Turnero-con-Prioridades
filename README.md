@@ -150,6 +150,7 @@ La colección de Postman se ejecuta contra el backend en marcha y cubre las fase
 
 - **Logout**: Angular elimina el token del cliente. El JWT emitido sigue siendo criptográficamente válido hasta su `exp` porque el alcance no incluye lista de revocación; en cambio, desactivar la cuenta o cambiar su rol hace que el backend rechace el token en la siguiente petición con 401.
 - **Login sin filtración de cuentas**: `POST /api/v1/auth/login` responde siempre el mismo `401` (`Credenciales inválidas`) para usuario inexistente, contraseña incorrecta o cuenta inactiva. Cuando el usuario no existe se compara igual contra BCrypt con un hash señuelo, para que el tiempo de respuesta tampoco delate si la cuenta existe.
+- **Pantalla pública y tokens vencidos**: `GET /api/v1/publico/pantalla` no depende de la identidad, así que descarta el `Authorization` que envíe el cliente. Un token vencido o inválido no la tumba con 401 (las rutas protegidas sí lo siguen rechazando). Además, el interceptor del frontend (`auth-interceptor.ts`) no adjunta el token a `/publico/pantalla` ni a `/auth/login`.
 - **Puerto 8080 ocupado**: identificar y detener el proceso, o levantar en otro puerto.
 
   ```powershell

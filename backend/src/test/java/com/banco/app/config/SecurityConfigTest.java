@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 // Endurecimiento de la configuracion: el secreto se valida al construir la
-// clave (arranque).
+// clave (arranque) y la ruta publica ignora un token vencido o invalido.
 class SecurityConfigTest {
 
     @Test
@@ -41,5 +42,19 @@ class SecurityConfigTest {
 
         assertThat(config.jwtDecoder()).isNotNull();
         assertThat(config.jwtEncoder()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("la pantalla pública ignora el token y las rutas protegidas lo exigen")
+    void laRutaPublicaIgnoraElToken() {
+        SecurityConfig config = new SecurityConfig();
+
+        MockHttpServletRequest publica = new MockHttpServletRequest("GET", "/api/v1/publico/pantalla");
+        publica.addHeader("Authorization", "Bearer token-vencido");
+        assertThat(config.bearerTokenResolver().resolve(publica)).isNull();
+
+        MockHttpServletRequest protegida = new MockHttpServletRequest("GET", "/api/v1/usuarios");
+        protegida.addHeader("Authorization", "Bearer token-valido");
+        assertThat(config.bearerTokenResolver().resolve(protegida)).isEqualTo("token-valido");
     }
 }
