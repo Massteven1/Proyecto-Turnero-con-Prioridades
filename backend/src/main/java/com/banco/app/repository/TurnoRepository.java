@@ -55,4 +55,58 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
             """)
     List<TurnoActivoView> buscarTurnosActivos(@Param("moduloIds") Collection<Long> moduloIds,
             @Param("estados") Collection<EstadoTurno> estados);
+
+    // GET /publico/pantalla: cola EN_ESPERA del dia de TODOS los servicios, con
+    // el servicio resuelto para no consultarlo fila por fila. El orden FIFO con
+    // desempate por id es la entrada de la proyeccion.
+    @Query("""
+            select t from Turno t
+                join fetch t.servicio
+            where t.fechaOperacion = :fecha
+              and t.estado = :estado
+            order by t.fechaIngreso asc, t.id asc
+            """)
+    List<Turno> buscarEnEsperaDelDia(@Param("fecha") LocalDate fecha,
+            @Param("estado") EstadoTurno estado);
+
+    // GET /turnos?modo=COLA: misma cola acotada al servicio pedido.
+    @Query("""
+            select t from Turno t
+                join fetch t.servicio
+            where t.fechaOperacion = :fecha
+              and t.estado = :estado
+              and t.servicioId = :servicioId
+            order by t.fechaIngreso asc, t.id asc
+            """)
+    List<Turno> buscarEnEsperaDelDiaPorServicio(@Param("fecha") LocalDate fecha,
+            @Param("estado") EstadoTurno estado, @Param("servicioId") Long servicioId);
+
+    // GET /publico/pantalla: turnos LLAMADO / EN_ATENCION del dia con su modulo.
+    @Query("""
+            select t from Turno t
+                join fetch t.servicio
+                left join fetch t.modulo
+            where t.fechaOperacion = :fecha
+              and t.estado in :estados
+            order by t.fechaLlamado asc, t.id asc
+            """)
+    List<Turno> buscarActivosDelDia(@Param("fecha") LocalDate fecha,
+            @Param("estados") Collection<EstadoTurno> estados);
+
+    // GET /turnos?modo=HISTORIAL: filtros opcionales fecha, servicioId y estado.
+    // Se ordena del mas reciente al mas antiguo y el id desempata dentro del
+    // mismo instante; sin fecha se consultan todos los dias.
+    @Query("""
+            select t from Turno t
+                join fetch t.servicio
+                left join fetch t.modulo
+                left join fetch t.operador
+            where (:fecha is null or t.fechaOperacion = :fecha)
+              and (:servicioId is null or t.servicioId = :servicioId)
+              and (:estado is null or t.estado = :estado)
+            order by t.fechaOperacion desc, t.fechaIngreso desc, t.id desc
+            """)
+    List<Turno> buscarHistorial(@Param("fecha") LocalDate fecha,
+            @Param("servicioId") Long servicioId,
+            @Param("estado") EstadoTurno estado);
 }

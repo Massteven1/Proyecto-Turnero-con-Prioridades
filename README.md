@@ -113,6 +113,20 @@ Si la base se inicializó hace horas, todos los turnos en espera habrán envejec
 - Colección ejecutable: `postman/collections/Turnero con Prioridades — API` (formato SDK YAML). Usa la variable `baseUrl` (por defecto `http://localhost:8080`), guarda el JWT del login en `{{token}}` y lo envía como `Authorization: Bearer`. El workflow `.github/workflows/postman-sync.yml` la sincroniza con Postman al pushear a `main`.
 - Swagger/OpenAPI (springdoc): con el backend en marcha, `http://localhost:8080/swagger-ui.html` muestra la interfaz y `http://localhost:8080/v3/api-docs` el contrato en JSON. El contrato se genera desde los controladores y DTOs: no se mantiene a mano. Para probar endpoints protegidos, usar el botón **Authorize** y pegar el token que devuelve el login.
 
+## Aclaraciones sobre la documentación
+
+`docs/` es la referencia funcional del proyecto: el contrato de endpoints del xlsx y las reglas del docx se aplican literalmente, salvo donde la documentación se contradice a sí misma o no coincide con el entorno de trabajo. Estas son las decisiones acordadas con el responsable del proyecto:
+
+| Tema | Lo que dice la documentación | Decisión aplicada |
+|---|---|---|
+| Versión de Spring Boot | Una versión anterior a la actual | Se mantiene **4.1.2**, la vigente al iniciar el proyecto; los endpoints, DTOs y validaciones del contrato no cambian |
+| Motor de base de datos | MySQL 8.0.16 o superior | Se usa **MariaDB 10.4.32 de XAMPP**, que soporta `CHECK` y columnas generadas; el esquema, los triggers y los datos semilla son los mismos |
+| Casos P01–P12 | La matriz de aceptación se exige como casos de la colección de Postman | Se completan **cuando termine el backend**, no fase por fase: los casos atraviesan varios endpoints a la vez |
+| Frontend Angular | Aparece intercalado en el plan de fases | Se inicia **cuando el backend esté terminado**; ninguna fase del backend depende del cliente |
+| 409 al modificar un usuario | El xlsx y la sección transaccional discrepan sobre su alcance | El 409 aplica solo a **desactivar la cuenta o cambiar el rol** de un usuario con turno activo, no a renombrarlo ni a cambiar su contraseña |
+| Consulta de turnos | El contrato describe la cola y el historial como consultas separadas y, sobre el historial, la tabla de permisos del docx contradice la sección del endpoint: la primera deja al OPERADOR consultar la fecha actual y la segunda lo declara exclusivo de ADMIN | `GET /api/v1/turnos` es una sola ruta con `?modo=COLA` (valor por defecto) y `?modo=HISTORIAL`, exclusivo de ADMIN; el xlsx confirma el 403 para OPERADOR |
+| Servicio inexistente en la cola | La fila del xlsx de `GET /api/v1/turnos` enumera 400, 401 y 403, sin 404 | `?modo=COLA` con un `servicioId` que no existe responde **404 Not Found** con `ErrorResponseDTO`, igual que el resto de rutas que reciben un ID por parámetro; un servicio existente sin turnos en espera responde 200 con la lista vacía |
+
 ## Validación
 
 ```powershell
@@ -151,8 +165,10 @@ Implementado:
 - Usuarios (`GET`, `POST`, `PUT /api/v1/usuarios`): BCrypt, username inmutable, 409 por turno activo y por último ADMIN activo, 403 a OPERADOR.
 - Catálogos: servicios (`GET`, `POST`, `PUT`), módulos (`GET`, `POST`, `PUT`), categorías (`GET`, `PUT`) y parámetros de cola (`GET`, `PUT`), con autorización por rol y bloqueos pesimistas en el orden definido.
 - Turnos: emisión (`POST /api/v1/turnos`) con consecutivo diario y snapshot de categoría, llamado (`POST /api/v1/modulos/{id}/siguiente`) con proporción N:1 y envejecimiento, y transiciones (`PATCH /api/v1/turnos/{id}/estado`) con motivo obligatorio, propiedad del turno e historial de auditoría.
+- Consulta: cola proyectada por servicio (`GET /api/v1/turnos?modo=COLA`), historial con filtros de fecha, servicio y estado (`GET /api/v1/turnos?modo=HISTORIAL`, exclusivo de ADMIN) y pantalla pública sin datos personales (`GET /api/v1/publico/pantalla`).
 
 Pendiente:
 
-- Pantalla pública, historial e indicadores.
-- Vistas del frontend Angular y los casos P01–P12 de la colección de Postman.
+- Detalle de un turno con sus transiciones (`GET /api/v1/turnos/{id}`, `TurnoDetalleDTO` y `TransicionHistorialDTO`).
+- Indicadores (`GET /api/v1/turnos/indicadores`, `IndicadoresDTO`).
+- Vistas del frontend Angular y los casos P01–P12 de la colección de Postman, que se completan al cerrar el backend.
