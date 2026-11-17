@@ -2,6 +2,9 @@
 # La configuracion de ejemplo vive en backend/src/main/resources/application-example.yml
 .env
 .env.*
+# application.yml es local: guarda el JWT_SECRET real (ver README y application-example.yml)
+application.yml
+backend/src/main/resources/application.yml
 
 # Cache de herramientas del agente y editor
 .atl/
