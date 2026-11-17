@@ -31,7 +31,7 @@ Las credenciales y secretos viven fuera del repositorio. La plantilla completa e
 | `DB_URL` | No (default local) | Cadena JDBC de MySQL/MariaDB |
 | `DB_USERNAME` | No (default `root`) | Usuario de la base |
 | `DB_PASSWORD` | No (default vacío) | Contraseña de la base |
-| `JWT_SECRET` | **Sí** | Firma HS256 del token; 32 caracteres o más |
+| `JWT_SECRET` | **Sí** | Firma HS256 del token; mínimo 32 bytes en UTF-8 (se valida al arrancar) |
 | `JWT_EXPIRATION_MS` | No (default `7200000`) | Vigencia del token en milisegundos |
 
 En PowerShell, antes de levantar el backend:
@@ -42,7 +42,7 @@ $env:DB_USERNAME = "root"
 $env:DB_PASSWORD = ""
 ```
 
-Sin `JWT_SECRET` la aplicación no arranca: el secreto no tiene valor por defecto para no versionar credenciales.
+Sin `JWT_SECRET` la aplicación no arranca: el secreto no tiene valor por defecto para no versionar credenciales. Tampoco arranca con un secreto de menos de 32 bytes: la validación es al construir la clave de firma, con un mensaje que indica la longitud configurada.
 
 ## Base de datos
 

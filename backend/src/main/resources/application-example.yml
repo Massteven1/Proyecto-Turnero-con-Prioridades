@@ -29,5 +29,6 @@ spring:
 app:
   jwt:
     # Generar con: [Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))
+    # Minimo 32 bytes: la aplicacion valida la longitud al arrancar.
     secret: ${JWT_SECRET}
     vigencia-ms: ${JWT_EXPIRATION_MS:7200000}

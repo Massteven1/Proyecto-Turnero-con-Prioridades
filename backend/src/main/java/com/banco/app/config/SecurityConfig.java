@@ -41,6 +41,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class SecurityConfig {
 
+    // HS256 usa una clave de 256 bits: menos de 32 bytes debilita la firma.
+    private static final int BYTES_MINIMOS_SECRETO = 32;
+
     @Value("${app.jwt.secret}")
     private String secreto;
 
@@ -98,9 +101,19 @@ public class SecurityConfig {
         return NimbusJwtEncoder.withSecretKey(clave()).build();
     }
 
-    // Clave HMAC-SHA256 a partir del secreto configurado (JWT_SECRET)
+    // Clave HMAC-SHA256 a partir del secreto configurado (JWT_SECRET).
+    // Se valida la longitud al arrancar: con menos de 32 bytes el arranque falla
+    // con un mensaje claro en vez de firmar tokens con una clave debil.
     private SecretKey clave() {
-        return new SecretKeySpec(secreto.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        if (secreto == null || secreto.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET no está configurada");
+        }
+        byte[] bytes = secreto.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < BYTES_MINIMOS_SECRETO) {
+            throw new IllegalStateException("JWT_SECRET debe tener al menos " + BYTES_MINIMOS_SECRETO
+                    + " bytes en UTF-8 (HS256 usa 256 bits); la configurada tiene " + bytes.length);
+        }
+        return new SecretKeySpec(bytes, "HmacSHA256");
     }
 
     // Traduce el claim "rol" del token a la autoridad ROLE_ADMIN / ROLE_OPERADOR
