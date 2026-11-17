@@ -1,0 +1,38 @@
+$kind: http-request
+name: 00. Preparación — admin y dos operadores
+description: |-
+  Inicia sesión como admin y crea dos cuentas OPERADOR nuevas (A y B) con su token. Los casos P01 a P12 usan esas cuentas, que nacen sin turnos activos.
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username":"admin","password":"Admin123!"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('admin inicia sesión (200)', () => pm.response.to.have.status(200));
+      const admin = pm.response.json().token;
+      pm.collectionVariables.set('token', admin);
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      async function enviar(ruta, token, cuerpo) {
+        const cabeceras = { 'Content-Type': 'application/json' };
+        if (token) cabeceras.Authorization = 'Bearer ' + token;
+        const r = await pm.sendRequest({ url: base + ruta, method: 'POST', header: cabeceras, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } });
+        return { status: r.code, json: r.json() };
+      }
+      const sello = Date.now();
+      for (const letra of ['A', 'B']) {
+        const username = 'acc_' + letra.toLowerCase() + '_' + sello;
+        const nombre = 'Operador Aceptacion ' + letra + ' ' + sello;
+        const creado = await enviar('/usuarios', admin, { username, nombreCompleto: nombre, password: 'Aceptacion123*', rol: 'OPERADOR' });
+        const login = await enviar('/auth/login', null, { username, password: 'Aceptacion123*' });
+        pm.test('operador ' + letra + ': creado (201) e inicia sesión (200)', () => pm.expect([creado.status, login.status]).to.eql([201, 200]));
+        pm.collectionVariables.set('accToken' + letra, login.json.token);
+        pm.collectionVariables.set('accId' + letra, String(creado.json.id));
+        pm.collectionVariables.set('accUsername' + letra, username);
+        pm.collectionVariables.set('accNombre' + letra, nombre);
+      }
+    language: text/javascript
+order: 1000

@@ -1,0 +1,137 @@
+$kind: http-request
+name: P03 — Proporción 3 a 1
+description: |-
+  Criterio: con P1 a P4 preferentes, R1 Regular no envejecido, contador 0 y proporcionPreferente = 3, liberando el turno después de cada llamado, el orden es P1, P2, P3, R1, P4.
+  El script previo emite R1 y luego P1 a P4. La petición es el primer llamado; el script posterior hace los otros cuatro.
+url: "{{baseUrl}}/api/v1/modulos/{{accModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{accTokenA}}
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Utilidades del caso
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      const admin = pm.collectionVariables.get('token');
+      const opA = pm.collectionVariables.get('accTokenA');
+      const opB = pm.collectionVariables.get('accTokenB');
+      async function api(metodo, ruta, token, cuerpo) {
+        const peticion = { url: base + ruta, method: metodo, header: {} };
+        if (token) peticion.header.Authorization = 'Bearer ' + token;
+        if (cuerpo !== undefined) {
+          peticion.header['Content-Type'] = 'application/json';
+          peticion.body = { mode: 'raw', raw: typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo) };
+        }
+        const r = await pm.sendRequest(peticion);
+        let json = null;
+        try { json = r.json(); } catch (e) { json = null; }
+        return { status: r.code, json };
+      }
+      function letras(n) {
+        let texto = '';
+        for (let i = 0; i < n; i++) texto += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+        return texto;
+      }
+      async function crearServicio(prefijo) {
+        const s = await api('POST', '/servicios', admin, { codigoPrefijo: prefijo + letras(4), nombre: 'Aceptacion ' + prefijo + ' ' + Date.now(), descripcion: 'Prueba de aceptación' });
+        const m = await api('POST', '/modulos', admin, { servicioId: s.json.id, nombre: 'Ventanilla ' + s.json.codigoPrefijo });
+        return { id: s.json.id, prefijo: s.json.codigoPrefijo, moduloId: m.json.id };
+      }
+      async function crearModulo(servicioId, nombre) {
+        return (await api('POST', '/modulos', admin, { servicioId, nombre: nombre + ' ' + Date.now() })).json.id;
+      }
+      async function emitir(servicioId, categoriaId, token) {
+        const cliente = 'CC ' + Math.floor(1000000 + Math.random() * 9000000) + ' - Prueba';
+        return (await api('POST', '/turnos', token || opA, { identificadorCliente: cliente, servicioId, categoriaId })).json;
+      }
+      function llamar(moduloId, token) {
+        return api('POST', '/modulos/' + moduloId + '/siguiente', token || opA);
+      }
+      function cambiar(id, nuevoEstado, token, motivo) {
+        return api('PATCH', '/turnos/' + id + '/estado', token || opA, motivo === undefined ? { nuevoEstado } : { nuevoEstado, motivo });
+      }
+      function liberar(id, token) {
+        return cambiar(id, 'CANCELADO', token, 'Liberado para el siguiente llamado');
+      }
+      async function contador(servicioId) {
+        return (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === servicioId).contadorPreferentes;
+      }
+      const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+      const caso = () => JSON.parse(pm.collectionVariables.get('accCaso'));
+
+      const s = await crearServicio('PRO');
+      const r1 = await emitir(s.id, 4);
+      const p = [];
+      for (const categoria of [1, 2, 3, 1]) p.push((await emitir(s.id, categoria)).id);
+      const parametros = (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === s.id);
+      pm.test('proporción 3 y contador 0 antes de llamar', () => pm.expect([parametros.proporcionPreferente, parametros.contadorPreferentes]).to.eql([3, 0]));
+      pm.collectionVariables.set('accModuloId', String(s.moduloId));
+      pm.collectionVariables.set('accCaso', JSON.stringify({ moduloId: s.moduloId, r1: r1.id, p }));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Utilidades del caso
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      const admin = pm.collectionVariables.get('token');
+      const opA = pm.collectionVariables.get('accTokenA');
+      const opB = pm.collectionVariables.get('accTokenB');
+      async function api(metodo, ruta, token, cuerpo) {
+        const peticion = { url: base + ruta, method: metodo, header: {} };
+        if (token) peticion.header.Authorization = 'Bearer ' + token;
+        if (cuerpo !== undefined) {
+          peticion.header['Content-Type'] = 'application/json';
+          peticion.body = { mode: 'raw', raw: typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo) };
+        }
+        const r = await pm.sendRequest(peticion);
+        let json = null;
+        try { json = r.json(); } catch (e) { json = null; }
+        return { status: r.code, json };
+      }
+      function letras(n) {
+        let texto = '';
+        for (let i = 0; i < n; i++) texto += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+        return texto;
+      }
+      async function crearServicio(prefijo) {
+        const s = await api('POST', '/servicios', admin, { codigoPrefijo: prefijo + letras(4), nombre: 'Aceptacion ' + prefijo + ' ' + Date.now(), descripcion: 'Prueba de aceptación' });
+        const m = await api('POST', '/modulos', admin, { servicioId: s.json.id, nombre: 'Ventanilla ' + s.json.codigoPrefijo });
+        return { id: s.json.id, prefijo: s.json.codigoPrefijo, moduloId: m.json.id };
+      }
+      async function crearModulo(servicioId, nombre) {
+        return (await api('POST', '/modulos', admin, { servicioId, nombre: nombre + ' ' + Date.now() })).json.id;
+      }
+      async function emitir(servicioId, categoriaId, token) {
+        const cliente = 'CC ' + Math.floor(1000000 + Math.random() * 9000000) + ' - Prueba';
+        return (await api('POST', '/turnos', token || opA, { identificadorCliente: cliente, servicioId, categoriaId })).json;
+      }
+      function llamar(moduloId, token) {
+        return api('POST', '/modulos/' + moduloId + '/siguiente', token || opA);
+      }
+      function cambiar(id, nuevoEstado, token, motivo) {
+        return api('PATCH', '/turnos/' + id + '/estado', token || opA, motivo === undefined ? { nuevoEstado } : { nuevoEstado, motivo });
+      }
+      function liberar(id, token) {
+        return cambiar(id, 'CANCELADO', token, 'Liberado para el siguiente llamado');
+      }
+      async function contador(servicioId) {
+        return (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === servicioId).contadorPreferentes;
+      }
+      const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+      const caso = () => JSON.parse(pm.collectionVariables.get('accCaso'));
+
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const c = caso();
+      const nombres = { [c.r1]: 'R1', [c.p[0]]: 'P1', [c.p[1]]: 'P2', [c.p[2]]: 'P3', [c.p[3]]: 'P4' };
+      const orden = [];
+      const contadores = [];
+      let r = pm.response.json();
+      for (let i = 0; i < 5; i++) {
+        if (i > 0) r = (await llamar(c.moduloId)).json;
+        orden.push(nombres[r.turno.id]);
+        contadores.push(r.contadorPreferentesActual);
+        await liberar(r.turno.id);
+      }
+      pm.test('orden P1, P2, P3, R1, P4', () => pm.expect(orden).to.eql(['P1', 'P2', 'P3', 'R1', 'P4']));
+      pm.test('contador después de cada llamado: 1, 2, 3, 0, 1', () => pm.expect(contadores).to.eql([1, 2, 3, 0, 1]));
+    language: text/javascript
+order: 4000

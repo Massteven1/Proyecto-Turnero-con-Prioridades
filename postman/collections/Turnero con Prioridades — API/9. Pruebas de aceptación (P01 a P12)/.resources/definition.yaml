@@ -1,0 +1,10 @@
+$kind: collection
+description: |-
+  Los casos P01 a P12 de la sección 8 de la documentación (Matriz de Pruebas de Aceptación), una petición por caso.
+  Cada caso crea su propio servicio y módulo con nombres únicos, así que la carpeta corre sola y se puede repetir.
+  Correrla completa y en orden: la 00 inicia sesión como admin y crea dos operadores (A y B) que usan los demás casos.
+  - P04 espera 61 segundos: usa un umbral de envejecimiento de 1 minuto para no esperar los 15 por defecto.
+  - P08 genera un token vencido solo si se define la variable jwtSecret con el JWT_SECRET del backend; si no, marca esa aserción como omitida.
+  - P01 y P10 se completan reiniciando el backend y enviando la última petición de la carpeta.
+  - P12 verifica por API la pantalla pública; la parte de Angular se comprueba en la interfaz (ver la descripción del caso).
+order: 9000

@@ -1,0 +1,75 @@
+$kind: http-request
+name: P01 y P10 — comprobación tras reiniciar el backend
+description: |-
+  Segunda parte de P01 y P10. Detenga el backend, vuelva a iniciarlo y envíe esta petición.
+  Comprueba que el turno de P01 sigue FINALIZADO con sus transiciones y que el servicio de P10 continúa la numeración del día sin reutilizar números.
+  Si se envía sin reiniciar, también pasa: comprueba lo mismo sobre el backend en marcha.
+url: "{{baseUrl}}/api/v1/turnos/{{accP01TurnoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      // Utilidades del caso
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      const admin = pm.collectionVariables.get('token');
+      const opA = pm.collectionVariables.get('accTokenA');
+      const opB = pm.collectionVariables.get('accTokenB');
+      async function api(metodo, ruta, token, cuerpo) {
+        const peticion = { url: base + ruta, method: metodo, header: {} };
+        if (token) peticion.header.Authorization = 'Bearer ' + token;
+        if (cuerpo !== undefined) {
+          peticion.header['Content-Type'] = 'application/json';
+          peticion.body = { mode: 'raw', raw: typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo) };
+        }
+        const r = await pm.sendRequest(peticion);
+        let json = null;
+        try { json = r.json(); } catch (e) { json = null; }
+        return { status: r.code, json };
+      }
+      function letras(n) {
+        let texto = '';
+        for (let i = 0; i < n; i++) texto += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+        return texto;
+      }
+      async function crearServicio(prefijo) {
+        const s = await api('POST', '/servicios', admin, { codigoPrefijo: prefijo + letras(4), nombre: 'Aceptacion ' + prefijo + ' ' + Date.now(), descripcion: 'Prueba de aceptación' });
+        const m = await api('POST', '/modulos', admin, { servicioId: s.json.id, nombre: 'Ventanilla ' + s.json.codigoPrefijo });
+        return { id: s.json.id, prefijo: s.json.codigoPrefijo, moduloId: m.json.id };
+      }
+      async function crearModulo(servicioId, nombre) {
+        return (await api('POST', '/modulos', admin, { servicioId, nombre: nombre + ' ' + Date.now() })).json.id;
+      }
+      async function emitir(servicioId, categoriaId, token) {
+        const cliente = 'CC ' + Math.floor(1000000 + Math.random() * 9000000) + ' - Prueba';
+        return (await api('POST', '/turnos', token || opA, { identificadorCliente: cliente, servicioId, categoriaId })).json;
+      }
+      function llamar(moduloId, token) {
+        return api('POST', '/modulos/' + moduloId + '/siguiente', token || opA);
+      }
+      function cambiar(id, nuevoEstado, token, motivo) {
+        return api('PATCH', '/turnos/' + id + '/estado', token || opA, motivo === undefined ? { nuevoEstado } : { nuevoEstado, motivo });
+      }
+      function liberar(id, token) {
+        return cambiar(id, 'CANCELADO', token, 'Liberado para el siguiente llamado');
+      }
+      async function contador(servicioId) {
+        return (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === servicioId).contadorPreferentes;
+      }
+      const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+      const caso = () => JSON.parse(pm.collectionVariables.get('accCaso'));
+
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('el turno de P01 sigue FINALIZADO con sus 4 transiciones', () => {
+        pm.expect(r.estado).to.eql('FINALIZADO');
+        pm.expect(r.transiciones.map(t => t.estadoNuevo)).to.eql(['EN_ESPERA', 'LLAMADO', 'EN_ATENCION', 'FINALIZADO']);
+      });
+      const ultimo = Number(pm.collectionVariables.get('accP10Ultimo'));
+      const nuevo = await emitir(Number(pm.collectionVariables.get('accP10ServicioId')), 4);
+      pm.test('la numeración de P10 continúa en ' + (ultimo + 1), () => pm.expect(nuevo.consecutivo).to.eql(ultimo + 1));
+      pm.collectionVariables.set('accP10Ultimo', String(nuevo.consecutivo));
+      await liberar(nuevo.id);
+    language: text/javascript
+order: 14000

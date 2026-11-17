@@ -1,0 +1,90 @@
+$kind: http-request
+name: P10 — Numeración simultánea
+description: |-
+  Criterio: registros simultáneos del mismo servicio generan códigos consecutivos distintos; cancelar un turno o reiniciar el backend no reutiliza números del día.
+  El script previo envía 10 registros a la vez, cancela el último y emite otro. La petición revisa el historial del servicio. La parte del reinicio está en la última petición de la carpeta.
+url: "{{baseUrl}}/api/v1/turnos?modo=HISTORIAL&servicioId={{accP10ServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Utilidades del caso
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      const admin = pm.collectionVariables.get('token');
+      const opA = pm.collectionVariables.get('accTokenA');
+      const opB = pm.collectionVariables.get('accTokenB');
+      async function api(metodo, ruta, token, cuerpo) {
+        const peticion = { url: base + ruta, method: metodo, header: {} };
+        if (token) peticion.header.Authorization = 'Bearer ' + token;
+        if (cuerpo !== undefined) {
+          peticion.header['Content-Type'] = 'application/json';
+          peticion.body = { mode: 'raw', raw: typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo) };
+        }
+        const r = await pm.sendRequest(peticion);
+        let json = null;
+        try { json = r.json(); } catch (e) { json = null; }
+        return { status: r.code, json };
+      }
+      function letras(n) {
+        let texto = '';
+        for (let i = 0; i < n; i++) texto += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+        return texto;
+      }
+      async function crearServicio(prefijo) {
+        const s = await api('POST', '/servicios', admin, { codigoPrefijo: prefijo + letras(4), nombre: 'Aceptacion ' + prefijo + ' ' + Date.now(), descripcion: 'Prueba de aceptación' });
+        const m = await api('POST', '/modulos', admin, { servicioId: s.json.id, nombre: 'Ventanilla ' + s.json.codigoPrefijo });
+        return { id: s.json.id, prefijo: s.json.codigoPrefijo, moduloId: m.json.id };
+      }
+      async function crearModulo(servicioId, nombre) {
+        return (await api('POST', '/modulos', admin, { servicioId, nombre: nombre + ' ' + Date.now() })).json.id;
+      }
+      async function emitir(servicioId, categoriaId, token) {
+        const cliente = 'CC ' + Math.floor(1000000 + Math.random() * 9000000) + ' - Prueba';
+        return (await api('POST', '/turnos', token || opA, { identificadorCliente: cliente, servicioId, categoriaId })).json;
+      }
+      function llamar(moduloId, token) {
+        return api('POST', '/modulos/' + moduloId + '/siguiente', token || opA);
+      }
+      function cambiar(id, nuevoEstado, token, motivo) {
+        return api('PATCH', '/turnos/' + id + '/estado', token || opA, motivo === undefined ? { nuevoEstado } : { nuevoEstado, motivo });
+      }
+      function liberar(id, token) {
+        return cambiar(id, 'CANCELADO', token, 'Liberado para el siguiente llamado');
+      }
+      async function contador(servicioId) {
+        return (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === servicioId).contadorPreferentes;
+      }
+      const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+      const caso = () => JSON.parse(pm.collectionVariables.get('accCaso'));
+
+      const s = await crearServicio('NUM');
+      const N = 10;
+      const rs = await Promise.all(Array.from({ length: N }, (_, i) =>
+        api('POST', '/turnos', i % 2 ? opA : opB, { identificadorCliente: 'CC ' + (8000000 + i) + ' - Numeracion', servicioId: s.id, categoriaId: i % 3 === 0 ? 1 : 4 })));
+      const consecutivos = rs.map(r => r.json.consecutivo).sort((a, b) => a - b);
+      pm.test(N + ' registros simultáneos: 201 con consecutivos 1 a ' + N + ' sin repetir', () => {
+        pm.expect(rs.map(r => r.status)).to.eql(rs.map(() => 201));
+        pm.expect(consecutivos).to.eql(Array.from({ length: N }, (_, i) => i + 1));
+        pm.expect(new Set(rs.map(r => r.json.codigo)).size).to.eql(N);
+      });
+      const ultimo = rs.find(r => r.json.consecutivo === N).json;
+      await liberar(ultimo.id);
+      const siguiente = await emitir(s.id, 4);
+      pm.test('cancelar el último no libera su número: el siguiente es ' + (N + 1), () => pm.expect(siguiente.consecutivo).to.eql(N + 1));
+      pm.collectionVariables.set('accP10ServicioId', String(s.id));
+      pm.collectionVariables.set('accP10Ultimo', String(siguiente.consecutivo));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      // TurnoResumenDTO no trae consecutivo: se lee del código PREFIJO-YYYYMMDD-NNN
+      const numero = (t) => Number(t.codigo.split('-')[2]);
+      const consecutivos = r.map(numero).sort((a, b) => a - b);
+      pm.test('el historial tiene los consecutivos 1 a 11, una sola vez cada uno', () => pm.expect(consecutivos).to.eql(Array.from({ length: 11 }, (_, i) => i + 1)));
+      pm.test('el turno 10 quedó CANCELADO y su número no se reutilizó', () => pm.expect(r.find(t => numero(t) === 10).estado).to.eql('CANCELADO'));
+      pm.test('códigos con formato PREFIJO-YYYYMMDD-NNN', () => r.forEach(t => pm.expect(t.codigo).to.match(/^[A-Z]{2,10}-\d{8}-\d{3,}$/)));
+    language: text/javascript
+order: 11000

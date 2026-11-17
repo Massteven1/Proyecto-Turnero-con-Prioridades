@@ -1,0 +1,140 @@
+$kind: http-request
+name: P12 — Frontend y persistencia
+description: |-
+  Criterio: las acciones en Angular modifican el backend real; la pantalla pública se actualiza periódicamente y no expone documentos ni nombres completos.
+  Esta petición verifica la parte del backend: un turno llamado aparece en la pantalla pública con su ventanilla y sin datos del cliente.
+  La parte de Angular se comprueba en la interfaz: abrir http://localhost:4200/pantalla en una pestaña, llamar un turno desde /operacion en otra y verificar que aparece en menos de 5 segundos sin recargar.
+url: "{{baseUrl}}/api/v1/publico/pantalla"
+method: GET
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Utilidades del caso
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      const admin = pm.collectionVariables.get('token');
+      const opA = pm.collectionVariables.get('accTokenA');
+      const opB = pm.collectionVariables.get('accTokenB');
+      async function api(metodo, ruta, token, cuerpo) {
+        const peticion = { url: base + ruta, method: metodo, header: {} };
+        if (token) peticion.header.Authorization = 'Bearer ' + token;
+        if (cuerpo !== undefined) {
+          peticion.header['Content-Type'] = 'application/json';
+          peticion.body = { mode: 'raw', raw: typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo) };
+        }
+        const r = await pm.sendRequest(peticion);
+        let json = null;
+        try { json = r.json(); } catch (e) { json = null; }
+        return { status: r.code, json };
+      }
+      function letras(n) {
+        let texto = '';
+        for (let i = 0; i < n; i++) texto += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+        return texto;
+      }
+      async function crearServicio(prefijo) {
+        const s = await api('POST', '/servicios', admin, { codigoPrefijo: prefijo + letras(4), nombre: 'Aceptacion ' + prefijo + ' ' + Date.now(), descripcion: 'Prueba de aceptación' });
+        const m = await api('POST', '/modulos', admin, { servicioId: s.json.id, nombre: 'Ventanilla ' + s.json.codigoPrefijo });
+        return { id: s.json.id, prefijo: s.json.codigoPrefijo, moduloId: m.json.id };
+      }
+      async function crearModulo(servicioId, nombre) {
+        return (await api('POST', '/modulos', admin, { servicioId, nombre: nombre + ' ' + Date.now() })).json.id;
+      }
+      async function emitir(servicioId, categoriaId, token) {
+        const cliente = 'CC ' + Math.floor(1000000 + Math.random() * 9000000) + ' - Prueba';
+        return (await api('POST', '/turnos', token || opA, { identificadorCliente: cliente, servicioId, categoriaId })).json;
+      }
+      function llamar(moduloId, token) {
+        return api('POST', '/modulos/' + moduloId + '/siguiente', token || opA);
+      }
+      function cambiar(id, nuevoEstado, token, motivo) {
+        return api('PATCH', '/turnos/' + id + '/estado', token || opA, motivo === undefined ? { nuevoEstado } : { nuevoEstado, motivo });
+      }
+      function liberar(id, token) {
+        return cambiar(id, 'CANCELADO', token, 'Liberado para el siguiente llamado');
+      }
+      async function contador(servicioId) {
+        return (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === servicioId).contadorPreferentes;
+      }
+      const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+      const caso = () => JSON.parse(pm.collectionVariables.get('accCaso'));
+
+      const s = await crearServicio('WEB');
+      const t = await api('POST', '/turnos', opA, { identificadorCliente: 'CC 5550001 - Pantalla Prueba', servicioId: s.id, categoriaId: 4 });
+      const llamado = await llamar(s.moduloId);
+      pm.collectionVariables.set('accCaso', JSON.stringify({ id: t.json.id, codigo: t.json.codigo, modulo: llamado.json.turno.moduloNombre }));
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Utilidades del caso
+      const base = pm.variables.replaceIn('{{baseUrl}}') + '/api/v1';
+      const admin = pm.collectionVariables.get('token');
+      const opA = pm.collectionVariables.get('accTokenA');
+      const opB = pm.collectionVariables.get('accTokenB');
+      async function api(metodo, ruta, token, cuerpo) {
+        const peticion = { url: base + ruta, method: metodo, header: {} };
+        if (token) peticion.header.Authorization = 'Bearer ' + token;
+        if (cuerpo !== undefined) {
+          peticion.header['Content-Type'] = 'application/json';
+          peticion.body = { mode: 'raw', raw: typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo) };
+        }
+        const r = await pm.sendRequest(peticion);
+        let json = null;
+        try { json = r.json(); } catch (e) { json = null; }
+        return { status: r.code, json };
+      }
+      function letras(n) {
+        let texto = '';
+        for (let i = 0; i < n; i++) texto += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+        return texto;
+      }
+      async function crearServicio(prefijo) {
+        const s = await api('POST', '/servicios', admin, { codigoPrefijo: prefijo + letras(4), nombre: 'Aceptacion ' + prefijo + ' ' + Date.now(), descripcion: 'Prueba de aceptación' });
+        const m = await api('POST', '/modulos', admin, { servicioId: s.json.id, nombre: 'Ventanilla ' + s.json.codigoPrefijo });
+        return { id: s.json.id, prefijo: s.json.codigoPrefijo, moduloId: m.json.id };
+      }
+      async function crearModulo(servicioId, nombre) {
+        return (await api('POST', '/modulos', admin, { servicioId, nombre: nombre + ' ' + Date.now() })).json.id;
+      }
+      async function emitir(servicioId, categoriaId, token) {
+        const cliente = 'CC ' + Math.floor(1000000 + Math.random() * 9000000) + ' - Prueba';
+        return (await api('POST', '/turnos', token || opA, { identificadorCliente: cliente, servicioId, categoriaId })).json;
+      }
+      function llamar(moduloId, token) {
+        return api('POST', '/modulos/' + moduloId + '/siguiente', token || opA);
+      }
+      function cambiar(id, nuevoEstado, token, motivo) {
+        return api('PATCH', '/turnos/' + id + '/estado', token || opA, motivo === undefined ? { nuevoEstado } : { nuevoEstado, motivo });
+      }
+      function liberar(id, token) {
+        return cambiar(id, 'CANCELADO', token, 'Liberado para el siguiente llamado');
+      }
+      async function contador(servicioId) {
+        return (await api('GET', '/parametros-cola', admin)).json.find(e => e.servicioId === servicioId).contadorPreferentes;
+      }
+      const esperar = (ms) => new Promise(resolver => setTimeout(resolver, ms));
+      const caso = () => JSON.parse(pm.collectionVariables.get('accCaso'));
+
+      pm.test('200 OK sin token', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      const c = caso();
+      const enModulo = r.turnosEnModulos.find(t => t.codigo === c.codigo);
+      pm.test('el turno llamado aparece con su ventanilla', () => {
+        pm.expect(enModulo).to.not.eql(undefined);
+        pm.expect(enModulo.moduloNombre).to.eql(c.modulo);
+        pm.expect(enModulo.estado).to.eql('LLAMADO');
+      });
+      pm.test('no expone documentos ni nombres', () => {
+        const texto = pm.response.text();
+        pm.expect(texto).to.not.include('CC 5550001');
+        pm.expect(texto).to.not.include('Pantalla Prueba');
+        pm.expect(texto).to.not.include('identificadorCliente');
+        pm.expect(texto).to.not.include(pm.collectionVariables.get('accNombreA'));
+      });
+      pm.test('hasta 10 turnos en espera por servicio', () => {
+        const porServicio = {};
+        r.proximosEnEspera.forEach(t => { porServicio[t.servicioNombre] = (porServicio[t.servicioNombre] || 0) + 1; });
+        Object.values(porServicio).forEach(n => pm.expect(n).to.be.at.most(10));
+      });
+      await liberar(c.id);
+    language: text/javascript
+order: 13000
