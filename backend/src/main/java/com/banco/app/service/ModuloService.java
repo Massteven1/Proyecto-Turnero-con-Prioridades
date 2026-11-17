@@ -63,11 +63,11 @@ public class ModuloService {
         Boolean filtro = administrador ? activo : Boolean.TRUE;
 
         List<ModuloAtencion> modulos = moduloAtencionRepository.buscar(servicioId, filtro);
-        Map<Long, String> turnosActivos = buscarTurnosActivos(
+        Map<Long, TurnoActivoView> turnosActivos = buscarTurnosActivos(
                 modulos.stream().map(ModuloAtencion::getId).toList());
 
         return modulos.stream()
-                .map(modulo -> ModuloDTO.de(modulo, turnosActivos.get(modulo.getId())))
+                .map(modulo -> aDTO(modulo, modulo.getServicio(), turnosActivos.get(modulo.getId())))
                 .toList();
     }
 
@@ -92,7 +92,7 @@ public class ModuloService {
         modulo.setActivo(true);
         ModuloAtencion guardado = moduloAtencionRepository.save(modulo);
 
-        return ModuloDTO.de(guardado, servicio, null);
+        return aDTO(guardado, servicio, null);
     }
 
     // READ_COMMITTED a proposito: la primera lectura de este metodo es un
@@ -181,7 +181,7 @@ public class ModuloService {
         modulo.setActivo(peticion.getActivo());
         moduloAtencionRepository.save(modulo);
 
-        return ModuloDTO.de(modulo, destino, buscarTurnoActivo(id));
+        return aDTO(modulo, destino, buscarTurnoActivo(id));
     }
 
     private void validarNombreDisponible(String nombre, Long idExcluido) {
@@ -191,19 +191,25 @@ public class ModuloService {
         }
     }
 
-    private Map<Long, String> buscarTurnosActivos(List<Long> moduloIds) {
+    private Map<Long, TurnoActivoView> buscarTurnosActivos(List<Long> moduloIds) {
         if (moduloIds.isEmpty()) {
             return Map.of();
         }
-        Map<Long, String> turnosActivos = new HashMap<>();
+        Map<Long, TurnoActivoView> turnosActivos = new HashMap<>();
         for (TurnoActivoView turno : turnoRepository.buscarTurnosActivos(moduloIds, ESTADOS_ACTIVOS)) {
-            turnosActivos.put(turno.getModuloId(), turno.getCodigo());
+            turnosActivos.put(turno.getModuloId(), turno);
         }
         return turnosActivos;
     }
 
-    private String buscarTurnoActivo(Long moduloId) {
+    private TurnoActivoView buscarTurnoActivo(Long moduloId) {
         return buscarTurnosActivos(List.of(moduloId)).get(moduloId);
+    }
+
+    private static ModuloDTO aDTO(ModuloAtencion modulo, Servicio servicio, TurnoActivoView turnoActivo) {
+        return turnoActivo == null
+                ? ModuloDTO.de(modulo, servicio, null, null)
+                : ModuloDTO.de(modulo, servicio, turnoActivo.getId(), turnoActivo.getCodigo());
     }
 
     // Nombre obligatorio de 3 a 50 caracteres, sin espacios exteriores

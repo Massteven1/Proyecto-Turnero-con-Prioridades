@@ -1,0 +1,144 @@
+<header class="encabezado">
+  <div>
+    <h1>Historial e indicadores</h1>
+    <p>
+      Audita los turnos de cualquier jornada y revisa cada cambio de estado con su hora, responsable y motivo. Desde el
+      detalle puedes resolver turnos que quedaron abiertos en días anteriores.
+    </p>
+  </div>
+</header>
+
+<form class="area consulta" [formGroup]="filtros" (ngSubmit)="aplicar()" aria-label="Filtros del historial">
+  <div class="campo">
+    <label class="campo__etiqueta" for="h-fecha">Fecha de operación</label>
+    <input id="h-fecha" class="entrada" type="date" formControlName="fecha" />
+    <span class="campo__ayuda">Vacía para consultar todas las fechas.</span>
+  </div>
+  <div class="campo">
+    <label class="campo__etiqueta" for="h-servicio">Servicio</label>
+    <select id="h-servicio" class="entrada" formControlName="servicioId">
+      <option [ngValue]="0">Todos los servicios</option>
+      @for (s of servicios(); track s.id) {
+        <option [ngValue]="s.id">{{ s.nombre }}</option>
+      }
+    </select>
+  </div>
+  <div class="campo">
+    <label class="campo__etiqueta" for="h-estado">Estado</label>
+    <select id="h-estado" class="entrada" formControlName="estado">
+      <option value="">Todos los estados</option>
+      @for (e of estados; track e) {
+        <option [value]="e">{{ etiquetaEstado[e] }}</option>
+      }
+    </select>
+  </div>
+  <div class="grupo-botones consulta__botones">
+    <button type="submit" class="boton boton--primario" [disabled]="cargando()">Aplicar filtros</button>
+    <button type="button" class="boton boton--secundario" (click)="limpiar()">Volver a hoy</button>
+  </div>
+</form>
+
+@if (error(); as e) {
+  <p class="nota nota--error" role="alert">{{ e }}</p>
+}
+
+@if (indicadores(); as i) {
+  <section class="jornada" aria-labelledby="ind-titulo">
+    <div class="jornada__cabecera">
+      <h2 id="ind-titulo">Indicadores del {{ fecha(i.fechaConsulta) }}</h2>
+      <p class="texto-tenue">{{ nombreServicio() }}</p>
+    </div>
+    <p class="jornada__resumen">
+      <strong>{{ i.totalEmitidos }}</strong> {{ i.totalEmitidos === 1 ? 'turno emitido' : 'turnos emitidos' }}.
+      @if (i.tiempoPromedioEsperaFormateado) {
+        Espera promedio hasta la atención: <strong>{{ i.tiempoPromedioEsperaFormateado }}</strong>.
+      } @else {
+        Aún no hay turnos atendidos para calcular la espera promedio.
+      }
+    </p>
+    @if (!aplicados().fecha) {
+      <p class="texto-chico texto-tenue">El listado incluye todas las fechas; los indicadores corresponden a hoy.</p>
+    }
+
+    @if (i.totalEmitidos > 0) {
+      <div class="reparto" aria-hidden="true">
+        @for (s of segmentos(); track s.clave) {
+          @if (s.valor > 0) {
+            <span [class]="'reparto__seg seg--' + s.clave" [style.width.%]="ancho(s.valor)"></span>
+          }
+        }
+      </div>
+    }
+    <ul class="leyenda">
+      @for (s of segmentos(); track s.clave) {
+        <li>
+          <span [class]="'leyenda__muestra seg--' + s.clave" aria-hidden="true"></span>
+          <span>{{ s.etiqueta }}</span>
+          <strong>{{ s.valor }}</strong>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+<section class="area" aria-labelledby="listado-titulo">
+  <div class="listado__cabecera">
+    <h2 id="listado-titulo">Turnos</h2>
+    <p class="texto-chico texto-tenue">
+      {{ turnos().length }} {{ turnos().length === 1 ? 'resultado' : 'resultados' }}
+      {{ aplicados().fecha ? 'del ' + fecha(aplicados().fecha) : 'de todas las fechas' }}
+    </p>
+  </div>
+
+  @if (cargando() && turnos().length === 0) {
+    <p class="cargando">Consultando el historial…</p>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Servicio</th>
+            <th scope="col">Categoría</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Ventanilla</th>
+            <th scope="col">Operador</th>
+            <th scope="col">Ingreso</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="acciones"><span class="solo-lector">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of turnos(); track t.id) {
+            <tr [class.fila-seleccionada]="seleccionado() === t.id">
+              <td><app-codigo [codigo]="t.codigo" /></td>
+              <td>{{ t.servicioNombre }}</td>
+              <td>{{ t.categoriaOriginalNombre }}</td>
+              <td>{{ t.identificadorCliente }}</td>
+              <td>{{ t.moduloNombre ?? '—' }}</td>
+              <td>{{ t.operadorUsername ?? '—' }}</td>
+              <td>
+                {{ hora(t.fechaIngreso) }}
+                @if (!aplicados().fecha) {
+                  <br /><span class="texto-tenue">{{ fecha(t.fechaOperacion) }}</span>
+                }
+              </td>
+              <td><app-estado [estado]="t.estado" /></td>
+              <td class="acciones">
+                <button type="button" class="boton boton--texto" (click)="ver(t.id)" [attr.aria-label]="'Ver transiciones del turno ' + t.codigo">
+                  Ver transiciones
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="vacio">No hay turnos con estos filtros. Prueba con otra fecha o quita el filtro de estado.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<app-turno-detalle [acciones]="true" (cambio)="alCambiar()" />

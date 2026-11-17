@@ -1,0 +1,151 @@
+<header class="encabezado">
+  <div>
+    <h1>Usuarios</h1>
+    <p>
+      Cuentas del personal de la sucursal. Las bajas son lógicas: la cuenta se conserva en el historial de los turnos
+      que atendió.
+    </p>
+  </div>
+</header>
+
+<div class="dos-columnas">
+  <section class="area" aria-labelledby="lista-usuarios">
+    <h2 id="lista-usuarios" class="solo-lector">Lista de usuarios</h2>
+    <div class="filtros">
+      <div class="pastillas" role="group" aria-label="Filtrar por estado">
+        <button type="button" [attr.aria-pressed]="filtro() === 'todos'" (click)="filtro.set('todos')">Todos</button>
+        <button type="button" [attr.aria-pressed]="filtro() === 'activos'" (click)="filtro.set('activos')">Activos</button>
+        <button type="button" [attr.aria-pressed]="filtro() === 'inactivos'" (click)="filtro.set('inactivos')">Inactivos</button>
+      </div>
+    </div>
+
+    @if (error(); as e) {
+      <p class="nota nota--error" role="alert">{{ e }}</p>
+    }
+
+    @if (cargando()) {
+      <p class="cargando">Cargando usuarios…</p>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Usuario</th>
+              <th scope="col">Nombre completo</th>
+              <th scope="col">Rol</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="acciones"><span class="solo-lector">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of visibles(); track u.id) {
+              <tr [class.fila-inactiva]="!u.activo" [class.fila-seleccionada]="editando()?.id === u.id">
+                <td>
+                  <strong>{{ u.username }}</strong>
+                  @if (u.id === yo()) {
+                    <span class="texto-tenue"> (tú)</span>
+                  }
+                </td>
+                <td>{{ u.nombreCompleto }}</td>
+                <td>{{ etiquetaRol[u.rol] }}</td>
+                <td><app-activo [activo]="u.activo" /></td>
+                <td class="acciones">
+                  <button type="button" class="boton boton--texto" (click)="editar(u)">Editar</button>
+                  <button
+                    type="button"
+                    [class]="u.activo ? 'boton boton--peligro boton--chico' : 'boton boton--secundario boton--chico'"
+                    (click)="cambiarActivo(u)"
+                  >
+                    {{ u.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="vacio">No hay usuarios con este filtro.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="editor" aria-labelledby="editor-usuario">
+    <h2 id="editor-usuario">{{ editando() ? 'Editar ' + editando()!.username : 'Nuevo usuario' }}</h2>
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <div class="campo">
+        <label class="campo__etiqueta" for="usr-username">Usuario</label>
+        <input
+          id="usr-username"
+          class="entrada"
+          formControlName="username"
+          maxlength="50"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+        />
+        <span class="campo__ayuda">
+          {{ editando() ? 'El nombre de usuario no se puede cambiar.' : 'De 3 a 50 caracteres, sin espacios.' }}
+        </span>
+        @if (errorCampo('username'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="usr-nombre">Nombre completo</label>
+        <input id="usr-nombre" class="entrada" formControlName="nombreCompleto" maxlength="100" />
+        @if (errorCampo('nombreCompleto'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="usr-password">{{ editando() ? 'Nueva contraseña' : 'Contraseña' }}</label>
+        <input id="usr-password" class="entrada" type="password" formControlName="password" maxlength="72" autocomplete="new-password" />
+        <span class="campo__ayuda">
+          {{ editando() ? 'Déjala vacía para conservar la actual. ' : '' }}Entre 8 y 72 caracteres.
+        </span>
+        @if (errorCampo('password'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      <fieldset>
+        <legend class="campo__etiqueta">Rol</legend>
+        <div class="opciones">
+          @for (r of roles; track r) {
+            <label class="opcion">
+              <input type="radio" formControlName="rol" [value]="r" />
+              <span class="opcion__nombre">{{ etiquetaRol[r] }}</span>
+              <span class="opcion__nota">{{ r === 'ADMIN' ? 'Catálogos, usuarios e historial' : 'Ventanilla y cola' }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+      @if (editando()) {
+        <div class="campo">
+          <label class="casilla">
+            <input type="checkbox" formControlName="activo" />
+            <span>Cuenta activa</span>
+          </label>
+        </div>
+        <p class="campo__ayuda usuarios__nota">
+          No se puede cambiar el rol ni desactivar una cuenta con un turno en curso, ni dejar la sucursal sin
+          administradores activos.
+        </p>
+      }
+      @if (errorForm(); as e) {
+        <p class="nota nota--error" role="alert">{{ e }}</p>
+      }
+      <div class="grupo-botones">
+        <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : editando() ? 'Guardar cambios' : 'Crear usuario' }}
+        </button>
+        @if (editando()) {
+          <button type="button" class="boton boton--secundario" (click)="nuevo()">Descartar</button>
+        }
+      </div>
+    </form>
+  </section>
+</div>
+
+<app-confirmacion />

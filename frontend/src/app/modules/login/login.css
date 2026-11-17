@@ -1,0 +1,128 @@
+.login {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  min-height: 100vh;
+}
+
+.login__acceso {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  width: min(100%, 26rem);
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.login__marca {
+  --fondo-marca: var(--papel);
+  color: var(--tinta);
+}
+
+.login__texto {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.login__texto h1 {
+  font-size: var(--t-3xl);
+  letter-spacing: -0.01em;
+}
+
+.login__texto p {
+  color: var(--tinta-suave);
+}
+
+.login__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.login__form .campo + .campo {
+  margin-top: 0;
+}
+
+.login__clave {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.login__recordar .campo__ayuda {
+  display: block;
+}
+
+.login__sala {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 3rem clamp(1.5rem, 5vw, 4.5rem);
+  background: var(--pizarra);
+  color: var(--pizarra-texto);
+}
+
+.login__sala h2 {
+  color: var(--pizarra-tenue);
+  font-weight: 600;
+}
+
+.login__ticket {
+  --fondo-muesca: var(--pizarra);
+  max-width: 32rem;
+  color: var(--tinta);
+}
+
+.login__ticket app-codigo {
+  --codigo-tamano: clamp(1.6rem, 2.9vw, 3rem);
+}
+
+.login__destino {
+  margin-top: 0.5rem;
+  font-size: var(--t-xl);
+  font-weight: 700;
+}
+
+.login__vacio {
+  font-size: var(--t-l);
+  color: var(--tinta-suave);
+}
+
+.login__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  color: var(--tinta-suave);
+}
+
+.login__cifras strong {
+  color: var(--tinta);
+  font-size: var(--t-xl);
+}
+
+.login__pantalla {
+  align-self: flex-start;
+  border-color: var(--pizarra-linea);
+  background: transparent;
+  color: var(--pizarra-texto);
+}
+
+.login__pantalla:hover,
+.login__pantalla:not(:disabled):hover {
+  background: var(--pizarra-2);
+  color: var(--pizarra-texto);
+}
+
+.login__sala :focus-visible {
+  outline-color: var(--led);
+}
+
+@media (max-width: 900px) {
+  .login {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login__sala {
+    padding: 2rem 1.5rem 3rem;
+  }
+}

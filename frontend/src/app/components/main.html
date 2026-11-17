@@ -1,1 +1,29 @@
-<p>main works!</p>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="barra">
+  <a class="barra__marca" routerLink="/" aria-label="Banco Visión, inicio">
+    <app-marca />
+  </a>
+
+  <nav class="barra__nav" aria-label="Secciones">
+    <a routerLink="/operacion" routerLinkActive="activo" ariaCurrentWhenActive="page">Ventanilla</a>
+    @if (esAdmin()) {
+      <a routerLink="/admin" routerLinkActive="activo" ariaCurrentWhenActive="page">Administración</a>
+      <a routerLink="/historial" routerLinkActive="activo" ariaCurrentWhenActive="page">Historial e indicadores</a>
+    }
+    <a href="/pantalla" target="_blank" rel="noopener">Pantalla de sala<span class="solo-lector"> (abre en otra pestaña)</span></a>
+  </nav>
+
+  @if (usuario(); as u) {
+    <div class="barra__cuenta">
+      <p class="barra__nombre">
+        <span>{{ u.nombreCompleto }}</span>
+        <span class="barra__rol">{{ rol() }}, sesión hasta las {{ vence() }}</span>
+      </p>
+      <button type="button" class="boton boton--secundario boton--chico" (click)="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  }
+</header>
+
+<main id="contenido" class="contenido" tabindex="-1">
+  <router-outlet />
+</main>

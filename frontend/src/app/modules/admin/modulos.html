@@ -1,0 +1,144 @@
+<header class="encabezado">
+  <div>
+    <h1>Módulos de atención</h1>
+    <p>
+      Ventanillas donde los operadores llaman y atienden turnos. Cada módulo atiende la cola de un solo servicio y
+      solo puede tener un turno en curso.
+    </p>
+  </div>
+</header>
+
+<div class="dos-columnas">
+  <section class="area" aria-labelledby="lista-modulos">
+    <h2 id="lista-modulos" class="solo-lector">Lista de módulos</h2>
+    <div class="filtros">
+      <label class="campo__etiqueta" for="filtro-servicio">Servicio</label>
+      <select id="filtro-servicio" class="entrada entrada--chica entrada--auto" (change)="elegirFiltro($any($event.target).value)">
+        <option value="0">Todos los servicios</option>
+        @for (s of servicios(); track s.id) {
+          <option [value]="s.id">{{ s.nombre }}{{ s.activo ? '' : ' (inactivo)' }}</option>
+        }
+      </select>
+    </div>
+
+    @if (error(); as e) {
+      <p class="nota nota--error" role="alert">{{ e }}</p>
+    }
+
+    @if (cargando()) {
+      <p class="cargando">Cargando módulos…</p>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Módulo</th>
+              <th scope="col">Servicio</th>
+              <th scope="col">Ocupación</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="acciones"><span class="solo-lector">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of visibles(); track m.id) {
+              <tr [class.fila-inactiva]="!m.activo" [class.fila-seleccionada]="editando()?.id === m.id">
+                <td><strong>{{ m.nombre }}</strong></td>
+                <td>{{ m.servicioNombre }} <span class="texto-tenue codigo">{{ m.servicioPrefijo }}</span></td>
+                <td>
+                  @if (m.ocupado && m.turnoActivoCodigo) {
+                    Atendiendo <app-codigo [codigo]="m.turnoActivoCodigo" />
+                  } @else {
+                    <span class="texto-tenue">Libre</span>
+                  }
+                </td>
+                <td><app-activo [activo]="m.activo" /></td>
+                <td class="acciones">
+                  <button type="button" class="boton boton--texto" (click)="editar(m)">Editar</button>
+                  @if (m.activo) {
+                    <button
+                      type="button"
+                      class="boton boton--peligro boton--chico"
+                      [disabled]="m.ocupado"
+                      [attr.title]="m.ocupado ? 'Está atendiendo un turno: resuélvelo antes de desactivarlo' : null"
+                      (click)="cambiarActivo(m)"
+                    >
+                      Desactivar
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="boton boton--secundario boton--chico"
+                      [disabled]="!servicioActivo(m.servicioId)"
+                      [attr.title]="servicioActivo(m.servicioId) ? null : 'Activa primero el servicio ' + m.servicioNombre"
+                      (click)="cambiarActivo(m)"
+                    >
+                      Activar
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="vacio">No hay módulos para este servicio.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="texto-chico texto-tenue tabla-nota">
+        Desactivar un módulo ocupado está bloqueado. Para activar un módulo, su servicio debe estar activo.
+      </p>
+    }
+  </section>
+
+  <section class="editor" aria-labelledby="editor-modulo">
+    <h2 id="editor-modulo">{{ editando() ? 'Editar ' + editando()!.nombre : 'Nuevo módulo' }}</h2>
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <div class="campo">
+        <label class="campo__etiqueta" for="mod-servicio">Servicio</label>
+        <select id="mod-servicio" class="entrada" formControlName="servicioId">
+          <option [ngValue]="0" disabled>Elige un servicio</option>
+          @for (s of serviciosActivos(); track s.id) {
+            <option [ngValue]="s.id">{{ s.nombre }}</option>
+          }
+          @if (editando() && !servicioActivo(editando()!.servicioId)) {
+            <option [ngValue]="editando()!.servicioId">{{ editando()!.servicioNombre }} (inactivo)</option>
+          }
+        </select>
+        <span class="campo__ayuda">Si el módulo ya atendió turnos, no puede pasar a otro servicio.</span>
+        @if (errorCampo('servicioId'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="mod-nombre">Nombre</label>
+        <input id="mod-nombre" class="entrada" formControlName="nombre" maxlength="50" />
+        <span class="campo__ayuda">Único en la sucursal. Ejemplo: Ventanilla Caja 3.</span>
+        @if (errorCampo('nombre'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      @if (editando()) {
+        <div class="campo">
+          <label class="casilla">
+            <input type="checkbox" formControlName="activo" />
+            <span>Módulo activo</span>
+          </label>
+        </div>
+      }
+      @if (errorForm(); as e) {
+        <p class="nota nota--error" role="alert">{{ e }}</p>
+      }
+      <div class="grupo-botones">
+        <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : editando() ? 'Guardar cambios' : 'Crear módulo' }}
+        </button>
+        @if (editando()) {
+          <button type="button" class="boton boton--secundario" (click)="nuevo()">Descartar</button>
+        }
+      </div>
+    </form>
+  </section>
+</div>
+
+<app-confirmacion />

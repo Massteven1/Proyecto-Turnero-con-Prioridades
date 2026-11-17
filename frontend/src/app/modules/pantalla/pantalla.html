@@ -1,0 +1,82 @@
+<div class="sala">
+  <header class="sala__cabecera">
+    <app-marca />
+    <h1 class="sala__titulo">Sala de espera</h1>
+    <div class="sala__reloj">
+      <p class="sala__hora">{{ hora() }}</p>
+      <p class="sala__dia">{{ dia() }}</p>
+    </div>
+    @if (!pantallaCompleta()) {
+      <button type="button" class="sala__completa" (click)="alternarPantallaCompleta()">Pantalla completa</button>
+    }
+  </header>
+
+  <main class="sala__cuerpo">
+    <section class="sala__llamados" aria-labelledby="llamados-titulo">
+      <h2 id="llamados-titulo" class="sala__seccion">Turno llamado</h2>
+
+      <div aria-live="assertive" aria-atomic="true">
+        @if (destacado(); as t) {
+          <div class="ticket sala__ticket" [class.sala__ticket--nuevo]="recienLlamado() === t.codigo">
+            <div class="sala__ticket-codigo">
+              <p class="sala__ticket-servicio">{{ t.servicioNombre }}</p>
+              <app-codigo [codigo]="t.codigo" tamano="xl" />
+            </div>
+            <div class="corte" aria-hidden="true"></div>
+            <div class="sala__ticket-destino">
+              <p class="sala__ticket-pase">Pase a</p>
+              <p class="sala__ticket-modulo">{{ t.moduloNombre }}</p>
+            </div>
+          </div>
+        } @else if (datos()) {
+          <p class="sala__vacio">En este momento ninguna ventanilla está llamando.</p>
+        } @else {
+          <p class="sala__vacio">Conectando con la sucursal…</p>
+        }
+      </div>
+
+      @if (resto().length > 0) {
+        <h2 class="sala__seccion">En ventanillas</h2>
+        <ul class="sala__lista" role="list">
+          @for (t of resto(); track t.codigo) {
+            <li class="sala__fila" [class.sala__fila--atencion]="t.estado === 'EN_ATENCION'">
+              <app-codigo [codigo]="t.codigo" tamano="l" />
+              <span class="sala__fila-modulo">{{ t.moduloNombre }}</span>
+              <span class="sala__fila-estado">{{ t.estado === 'LLAMADO' ? 'Llamado' : 'En atención' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="sala__proximos" aria-labelledby="proximos-titulo">
+      <h2 id="proximos-titulo" class="sala__seccion">Próximos turnos</h2>
+      @for (cola of colas(); track cola.servicio) {
+        <div class="sala__cola">
+          <h3>{{ cola.servicio }}</h3>
+          <ol role="list">
+            @for (t of cola.turnos; track t.codigo) {
+              <li>
+                <span class="sala__orden">{{ t.ordenEnCola }}</span>
+                <app-codigo [codigo]="t.codigo" tamano="l" />
+              </li>
+            }
+          </ol>
+        </div>
+      } @empty {
+        @if (datos()) {
+          <p class="sala__vacio sala__vacio--chico">No hay turnos en espera.</p>
+        }
+      }
+    </section>
+  </main>
+
+  <footer class="sala__pie">
+    <p>Por tu privacidad, aquí solo aparecen códigos de turno.</p>
+    @if (sinConexion()) {
+      <p class="sala__estado sala__estado--error" role="status">Sin conexión con el servidor. Reintentando cada 5 segundos.</p>
+    } @else {
+      <p class="sala__estado">Actualizado a las {{ actualizado() }}. Se actualiza cada 5 segundos.</p>
+    }
+  </footer>
+</div>

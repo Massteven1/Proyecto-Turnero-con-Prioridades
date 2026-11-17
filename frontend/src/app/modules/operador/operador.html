@@ -1,0 +1,309 @@
+@if (cargando()) {
+  <p class="cargando">Preparando la ventanilla…</p>
+} @else if (errorCarga()) {
+  <div class="nota nota--error" role="alert">
+    <p>{{ errorCarga() }}</p>
+  </div>
+} @else {
+  <div class="mostrador">
+    <!-- Ventanilla: el turno en curso y el botón único de llamado -->
+    <section class="mostrador__ventanilla" aria-labelledby="ventanilla-titulo">
+      <div class="ventanilla__cabecera">
+        <h1 id="ventanilla-titulo">Ventanilla</h1>
+        <label class="solo-lector" for="modulo">Ventanilla en la que atiendes</label>
+        <select
+          id="modulo"
+          class="entrada ventanilla__selector"
+          [disabled]="!!turnoActivo()"
+          (change)="elegirModulo($any($event.target).value)"
+        >
+          <option value="" [selected]="moduloId() === null">Elige tu ventanilla</option>
+          @for (g of grupos(); track g.servicio) {
+            <optgroup [label]="g.servicio">
+              @for (m of g.modulos; track m.id) {
+                <option [value]="m.id" [selected]="m.id === moduloId()">
+                  {{ m.nombre }}{{ m.ocupado ? ' (ocupada)' : '' }}
+                </option>
+              }
+            </optgroup>
+          }
+        </select>
+      </div>
+      @if (turnoActivo()) {
+        <p class="texto-chico texto-tenue">Para cambiar de ventanilla, primero resuelve el turno en curso.</p>
+      }
+
+      <button
+        type="button"
+        class="boton boton--sello boton--grande boton--ancho ventanilla__llamar"
+        [disabled]="!!razonNoLlamar() || llamando()"
+        (click)="llamar()"
+        aria-describedby="razon-llamar"
+      >
+        {{ llamando() ? 'Llamando…' : 'Llamar siguiente turno' }}
+      </button>
+      <p id="razon-llamar" class="texto-chico texto-tenue">
+        {{ razonNoLlamar() ?? 'El sistema elige el turno según prioridad, espera y orden de llegada.' }}
+      </p>
+
+      <div class="ticket ventanilla__ticket" aria-live="polite">
+        @if (turno(); as t) {
+          <div class="ticket__cabeza">
+            <span>{{ t.servicioNombre }}{{ t.moduloNombre ? ', ' + t.moduloNombre : '' }}</span>
+            <app-estado [estado]="t.estado" />
+          </div>
+          <div class="ticket__cuerpo">
+            <app-codigo [codigo]="t.codigo" tamano="xl" />
+            <p class="ventanilla__etiqueta">Cliente: verifica su identidad</p>
+            <p class="ventanilla__cliente">{{ t.identificadorCliente }}</p>
+            <p class="ventanilla__categoria">
+              <span>{{ t.categoriaOriginalNombre }}</span>
+              @if (t.conjuntoEfectivo && t.conjuntoEfectivo !== 'REGULAR') {
+                <app-conjunto [conjunto]="t.conjuntoEfectivo" />
+              }
+            </p>
+          </div>
+          <div class="corte"></div>
+          <div class="ticket__cuerpo">
+            <ol class="pasos" aria-label="Recorrido del turno">
+              @for (p of pasos(); track p.nombre) {
+                <li [class.hecho]="p.hecho" [class.salida]="p.salida">
+                  <span class="pasos__nombre">{{ p.nombre }}</span>
+                  <span class="pasos__hora">{{ p.hecho ? hora(p.hora) : 'Pendiente' }}</span>
+                </li>
+              }
+            </ol>
+
+            @if (turnoActivo(); as a) {
+              <div class="ventanilla__acciones">
+                <button
+                  type="button"
+                  class="boton boton--exito"
+                  [disabled]="a.estado !== 'LLAMADO' || cambiando() !== null"
+                  (click)="cambiar('EN_ATENCION')"
+                >
+                  {{ cambiando() === 'EN_ATENCION' ? 'Guardando…' : 'Iniciar atención' }}
+                </button>
+                <button
+                  type="button"
+                  class="boton boton--exito"
+                  [disabled]="a.estado !== 'EN_ATENCION' || cambiando() !== null"
+                  (click)="cambiar('FINALIZADO')"
+                >
+                  {{ cambiando() === 'FINALIZADO' ? 'Guardando…' : 'Finalizar atención' }}
+                </button>
+                <button
+                  type="button"
+                  class="boton boton--peligro"
+                  [disabled]="a.estado !== 'LLAMADO' || cambiando() !== null"
+                  (click)="cambiar('AUSENTE')"
+                >
+                  Marcar ausente
+                </button>
+                <button
+                  type="button"
+                  class="boton boton--peligro"
+                  [disabled]="a.estado !== 'LLAMADO' || cambiando() !== null"
+                  (click)="cambiar('CANCELADO')"
+                >
+                  Cancelar turno
+                </button>
+              </div>
+              <p class="texto-chico texto-tenue">
+                {{
+                  a.estado === 'LLAMADO'
+                    ? 'Inicia la atención cuando el cliente llegue. Si no se acerca, márcalo ausente.'
+                    : 'Un turno en atención solo puede finalizarse.'
+                }}
+              </p>
+            } @else {
+              <p class="ventanilla__cerrado">
+                Turno {{ etiquetaEstado[t.estado].toLowerCase() }}. La ventanilla está libre para el siguiente llamado.
+              </p>
+            }
+          </div>
+        } @else {
+          <div class="ticket__cabeza">
+            <span>{{ modulo()?.servicioNombre ?? 'Sin ventanilla' }}</span>
+          </div>
+          <div class="ticket__cuerpo ventanilla__vacia">
+            @if (modulo(); as m) {
+              @if (m.ocupado) {
+                <p class="ventanilla__libre">Ventanilla ocupada</p>
+                <p>
+                  {{ m.nombre }} tiene en curso el turno {{ m.turnoActivoCodigo }}, asignado a otra cuenta. Elige otra
+                  ventanilla o pide a un administrador que lo resuelva.
+                </p>
+              } @else {
+                <p class="ventanilla__libre">Sin turno en ventanilla</p>
+                <p>Llama al siguiente turno de la cola de {{ m.servicioNombre }}.</p>
+              }
+            } @else {
+              <p class="ventanilla__libre">Elige tu ventanilla</p>
+              <p>Selecciónala en la lista de arriba para ver su cola y empezar a llamar.</p>
+            }
+          </div>
+        }
+      </div>
+
+      @if (estadoCola(); as p) {
+        <div class="proporcion">
+          <p class="proporcion__titulo">
+            Proporción {{ p.proporcionPreferente }} a 1 en {{ p.servicioNombre }}
+          </p>
+          <div class="proporcion__pips" aria-hidden="true">
+            @for (lleno of pips(); track $index) {
+              <span class="pip" [class.pip--lleno]="lleno"></span>
+            }
+            <span class="pip pip--regular" [class.pip--siguiente]="tocaRegular()"></span>
+          </div>
+          <p class="texto-chico">
+            {{ p.contadorPreferentes }} de {{ p.proporcionPreferente }} preferentes seguidos.
+            {{
+              tocaRegular()
+                ? 'Si hay regulares en espera, el próximo llamado será para uno de ellos.'
+                : 'Los preferentes siguen teniendo prioridad.'
+            }}
+          </p>
+          <p class="texto-chico texto-tenue">
+            Un turno regular pasa a competir como preferente tras {{ p.umbralEnvejecimientoMin }} minutos de espera.
+          </p>
+        </div>
+      }
+    </section>
+
+    <!-- Cola proyectada del servicio de la ventanilla -->
+    <section class="mostrador__cola" aria-labelledby="cola-titulo">
+      <div class="cola__cabecera">
+        <h2 id="cola-titulo">
+          Cola de espera
+          @if (modulo(); as m) {
+            <span class="cola__servicio">{{ m.servicioNombre }}</span>
+          }
+        </h2>
+        <button type="button" class="boton boton--texto" (click)="refrescar()">Actualizar</button>
+      </div>
+
+      @if (errorCola(); as e) {
+        <p class="nota nota--error" role="alert">{{ e }}</p>
+      }
+
+      @if (modulo(); as m) {
+        <p class="texto-chico texto-tenue">
+          {{ cola().length }} {{ cola().length === 1 ? 'turno' : 'turnos' }} en espera hoy. Actualizada a las
+          {{ colaActualizada() }}.
+        </p>
+        <ol class="cola">
+          @for (t of cola(); track t.id) {
+            <li class="cola__turno">
+              <span class="cola__orden">{{ t.ordenEnCola }}</span>
+              <div class="cola__datos">
+                <button type="button" class="cola__codigo" (click)="verDetalle(t.id)" [attr.aria-label]="'Ver detalle del turno ' + t.codigo">
+                  <app-codigo [codigo]="t.codigo" />
+                </button>
+                <p class="cola__cliente">{{ t.identificadorCliente }}</p>
+                <p class="cola__categoria">
+                  <span>{{ t.categoriaOriginalNombre }}</span>
+                  @if (t.conjuntoEfectivo !== 'REGULAR') {
+                    <app-conjunto [conjunto]="t.conjuntoEfectivo" />
+                  }
+                </p>
+              </div>
+              <div class="cola__lado">
+                <span class="cola__espera">{{ t.tiempoEsperaMin }} min</span>
+                <button
+                  type="button"
+                  class="boton boton--texto boton--texto-peligro"
+                  (click)="cancelarEnCola(t)"
+                  [attr.aria-label]="'Cancelar turno ' + t.codigo"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </li>
+          } @empty {
+            <li class="vacio">No hay turnos en espera para {{ m.servicioNombre }}.</li>
+          }
+        </ol>
+        <p class="texto-chico texto-tenue cola__nota">
+          El orden proyecta los próximos llamados con la prioridad, la espera máxima y la proporción vigentes. Puede
+          cambiar si ingresan turnos nuevos.
+        </p>
+      } @else {
+        <p class="vacio">Elige una ventanilla para ver la cola de su servicio.</p>
+      }
+    </section>
+    <!-- Registro de turnos nuevos -->
+    <section class="mostrador__emitir" aria-labelledby="emitir-titulo">
+      <h2 id="emitir-titulo">Registrar turno</h2>
+      <form [formGroup]="form" (ngSubmit)="registrar()" novalidate>
+        <div class="campo">
+          <label class="campo__etiqueta" for="cliente">Cliente</label>
+          <input
+            id="cliente"
+            class="entrada"
+            formControlName="identificadorCliente"
+            maxlength="100"
+            autocomplete="off"
+            aria-describedby="cliente-ayuda"
+          />
+          <span id="cliente-ayuda" class="campo__ayuda">Documento, nombre corto o ambos. Ejemplo: CC 1088345 - Maria L.</span>
+          @if (errorCampo('identificadorCliente'); as e) {
+            <span class="campo__error">{{ e }}</span>
+          }
+        </div>
+
+        <div class="campo">
+          <label class="campo__etiqueta" for="servicio">Servicio</label>
+          <select id="servicio" class="entrada" formControlName="servicioId">
+            @for (s of serviciosActivos(); track s.id) {
+              <option [ngValue]="s.id">{{ s.nombre }} ({{ s.codigoPrefijo }})</option>
+            }
+          </select>
+        </div>
+
+        <fieldset>
+          <legend class="campo__etiqueta">Categoría de prioridad</legend>
+          <div class="opciones">
+            @for (c of categorias(); track c.id) {
+              <label class="opcion" [class.opcion--preferente]="c.preferente">
+                <input type="radio" formControlName="categoriaId" [value]="c.id" />
+                <span class="opcion__nombre">{{ c.nombre }}</span>
+                <span class="opcion__nota">{{ c.preferente ? 'Preferente' : 'Sin prioridad' }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        @if (errorRegistro(); as e) {
+          <p class="nota nota--error emitir__error" role="alert">{{ e }}</p>
+        }
+
+        <button type="submit" class="boton boton--primario boton--ancho emitir__boton" [disabled]="registrando()">
+          {{ registrando() ? 'Registrando…' : 'Registrar turno' }}
+        </button>
+      </form>
+
+      @if (emitido(); as e) {
+        <div class="ticket emitir__ticket" role="status">
+          <div class="ticket__cabeza">
+            <span>Turno emitido</span>
+            <span>{{ hora(e.fechaIngreso) }}</span>
+          </div>
+          <div class="ticket__cuerpo">
+            <app-codigo [codigo]="e.codigo" tamano="l" />
+            <p class="texto-chico">{{ e.servicioNombre }}, {{ e.categoriaOriginalNombre }}</p>
+          </div>
+          <div class="corte"></div>
+          <div class="ticket__cuerpo texto-chico texto-tenue">
+            Entrega este código a {{ e.identificadorCliente }}. Aparecerá en la pantalla de sala cuando lo llamen.
+          </div>
+        </div>
+      }
+    </section>
+
+  </div>
+}
+
+<app-dialogo-motivo />
+<app-turno-detalle [acciones]="true" (cambio)="alCambiarDesdeDetalle()" />

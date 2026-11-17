@@ -1,0 +1,129 @@
+<dialog #dialogo class="cajon" aria-labelledby="detalle-titulo">
+  <div class="detalle">
+    <header class="detalle__cabecera">
+      <div>
+        <p class="texto-tenue texto-chico">Detalle del turno</p>
+        <h2 id="detalle-titulo">
+          @if (turno(); as t) {
+            <app-codigo [codigo]="t.codigo" tamano="l" />
+          } @else {
+            Cargando turno
+          }
+        </h2>
+      </div>
+      <button type="button" class="boton boton--secundario boton--chico" (click)="cerrar()">Cerrar</button>
+    </header>
+
+    @if (cargando() && !turno()) {
+      <p class="cargando">Consultando el turno…</p>
+    }
+    @if (error(); as e) {
+      <p class="nota nota--error" role="alert">{{ e }}</p>
+    }
+
+    @if (turno(); as t) {
+      <div class="detalle__estado">
+        <app-estado [estado]="t.estado" />
+        <app-conjunto [conjunto]="t.conjuntoEfectivo" />
+        <span class="texto-tenue texto-chico">Jornada del {{ fecha(t.fechaOperacion) }}</span>
+      </div>
+
+      <dl class="ficha">
+        <div>
+          <dt>Cliente</dt>
+          <dd>{{ t.identificadorCliente }}</dd>
+        </div>
+        <div>
+          <dt>Servicio</dt>
+          <dd>{{ t.servicioNombre }}</dd>
+        </div>
+        <div>
+          <dt>Categoría al emitir</dt>
+          <dd>{{ t.categoriaOriginalNombre }}{{ t.preferenteOriginal ? ' (preferente)' : '' }}</dd>
+        </div>
+        <div>
+          <dt>Ventanilla</dt>
+          <dd>{{ t.moduloNombre ?? 'Sin asignar' }}</dd>
+        </div>
+        <div>
+          <dt>Operador asignado</dt>
+          <dd>{{ t.operadorUsername ?? 'Sin asignar' }}</dd>
+        </div>
+        <div>
+          <dt>Espera hasta la atención</dt>
+          <dd>{{ espera() === null ? 'Sin iniciar atención' : espera() + ' min' }}</dd>
+        </div>
+        <div>
+          <dt>Ingreso</dt>
+          <dd>{{ fechaHora(t.fechaIngreso) }}</dd>
+        </div>
+        <div>
+          <dt>Llamado</dt>
+          <dd>{{ fechaHora(t.fechaLlamado) }}</dd>
+        </div>
+        <div>
+          <dt>Inicio de atención</dt>
+          <dd>{{ fechaHora(t.fechaInicioAtencion) }}</dd>
+        </div>
+        <div>
+          <dt>Fin de atención</dt>
+          <dd>{{ fechaHora(t.fechaFinAtencion) }}</dd>
+        </div>
+        @if (t.fechaCancelacionAusencia) {
+          <div class="ficha__ancho">
+            <dt>{{ t.estado === 'AUSENTE' ? 'Marcado ausente' : 'Cancelado' }}</dt>
+            <dd>{{ fechaHora(t.fechaCancelacionAusencia) }}: {{ t.motivoCancelacionAusencia }}</dd>
+          </div>
+        }
+      </dl>
+
+      @if (acciones()) {
+        <section class="detalle__acciones" aria-labelledby="acciones-titulo">
+          <h3 id="acciones-titulo">Acciones</h3>
+          @if (disponibles().length === 0) {
+            <p class="texto-tenue texto-chico">El turno está cerrado: no admite más cambios de estado.</p>
+          } @else if (bloqueo()) {
+            <p class="texto-tenue texto-chico">{{ bloqueo() }}</p>
+          } @else {
+            <div class="grupo-botones">
+              @for (a of disponibles(); track a.estado) {
+                <button type="button" [class]="a.clase" [disabled]="enCurso() !== null" (click)="ejecutar(a)">
+                  {{ enCurso() === a.estado ? 'Guardando…' : a.texto }}
+                </button>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      <section aria-labelledby="transiciones-titulo">
+        <h3 id="transiciones-titulo">Transiciones</h3>
+        <ol class="linea-tiempo">
+          @for (tr of t.transiciones; track tr.id; let i = $index) {
+            <li>
+              <span class="linea-tiempo__paso" aria-hidden="true">{{ i + 1 }}</span>
+              <div>
+                <p class="linea-tiempo__cambio">
+                  @if (tr.estadoAnterior) {
+                    {{ etiquetaEstado[tr.estadoAnterior] }} a {{ etiquetaEstado[tr.estadoNuevo] }}
+                  } @else {
+                    Emisión: {{ etiquetaEstado[tr.estadoNuevo] }}
+                  }
+                </p>
+                <p class="texto-chico texto-tenue">
+                  {{ fechaHora(tr.fechaCambio) }}, por {{ tr.operadorUsername ?? 'sistema' }}
+                </p>
+                @if (tr.motivo) {
+                  <p class="texto-chico">{{ tr.motivo }}</p>
+                }
+              </div>
+            </li>
+          } @empty {
+            <li class="texto-tenue">Sin transiciones registradas.</li>
+          }
+        </ol>
+      </section>
+    }
+  </div>
+</dialog>
+<app-dialogo-motivo />

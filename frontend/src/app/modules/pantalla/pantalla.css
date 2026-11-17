@@ -1,0 +1,229 @@
+.sala {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  background: var(--pizarra);
+  color: var(--pizarra-texto);
+}
+
+.sala__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 1rem 2.5rem;
+  padding: 1.25rem clamp(1.25rem, 3vw, 3rem);
+  border-bottom: 1px solid var(--pizarra-linea);
+}
+
+.sala__titulo {
+  flex: 1;
+  color: var(--pizarra-tenue);
+  font-size: clamp(var(--t-xl), 2vw, var(--t-3xl));
+  font-weight: 600;
+}
+
+.sala__reloj {
+  text-align: right;
+  line-height: 1.1;
+}
+
+.sala__hora {
+  font-size: clamp(var(--t-3xl), 4vw, 4.5rem);
+  font-weight: 700;
+}
+
+.sala__dia {
+  color: var(--pizarra-tenue);
+  font-size: clamp(var(--t-m), 1.2vw, var(--t-xl));
+}
+
+.sala__completa {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--pizarra-linea);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pizarra-tenue);
+  cursor: pointer;
+}
+
+.sala__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 3.5rem);
+  padding: clamp(1.25rem, 3vw, 3rem);
+}
+
+.sala__seccion {
+  margin-bottom: 1rem;
+  color: var(--pizarra-tenue);
+  font-size: clamp(var(--t-l), 1.6vw, var(--t-2xl));
+  font-weight: 600;
+}
+
+.sala__seccion:not(:first-child) {
+  margin-top: 2.5rem;
+}
+
+.sala__ticket {
+  --fondo-muesca: var(--pizarra);
+  border: 0;
+  color: var(--tinta);
+  background: var(--guilloche) repeat-x left 0 bottom 0.75rem / auto 1.6rem, var(--hoja);
+}
+
+.sala__ticket .corte::before,
+.sala__ticket .corte::after {
+  border-color: transparent;
+}
+
+.sala__ticket app-codigo {
+  --codigo-tamano: clamp(var(--t-3xl), 4.6vw, 7.5rem);
+}
+
+.sala__ticket-codigo,
+.sala__ticket-destino {
+  padding: clamp(1.25rem, 2.2vw, 2.25rem) clamp(1.25rem, 2.5vw, 2.5rem);
+}
+
+.sala__ticket-destino {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding-bottom: clamp(2rem, 3.5vw, 3.25rem);
+}
+
+.sala__ticket-servicio,
+.sala__ticket-pase {
+  color: var(--tinta-suave);
+  font-size: clamp(var(--t-l), 1.5vw, var(--t-2xl));
+  font-weight: 600;
+}
+
+.sala__ticket-modulo {
+  font-size: clamp(var(--t-2xl), 3vw, var(--t-4xl));
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.sala__ticket--nuevo {
+  animation: llamado 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 2;
+  outline: 6px solid var(--led);
+  outline-offset: 6px;
+}
+
+@keyframes llamado {
+  0% {
+    transform: scale(0.97);
+    outline-color: transparent;
+  }
+  50% {
+    transform: scale(1.01);
+  }
+}
+
+.sala__lista,
+.sala__cola ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sala__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--pizarra-linea);
+  font-size: clamp(var(--t-m), 1.3vw, var(--t-xl));
+}
+
+.sala__fila app-codigo,
+.sala__cola app-codigo {
+  --codigo-tamano: clamp(var(--t-xl), 2vw, var(--t-3xl));
+  --codigo-color: var(--led);
+  --codigo-serie: var(--pizarra-tenue);
+}
+
+.sala__fila-modulo {
+  font-weight: 700;
+}
+
+.sala__fila-estado {
+  color: var(--led);
+  font-weight: 700;
+}
+
+.sala__fila--atencion app-codigo {
+  --codigo-color: var(--pizarra-texto);
+}
+
+.sala__fila--atencion .sala__fila-estado {
+  font-weight: 400;
+  color: var(--pizarra-tenue);
+}
+
+.sala__proximos {
+  padding-left: clamp(1.25rem, 2.5vw, 3rem);
+  border-left: 1px solid var(--pizarra-linea);
+}
+
+.sala__cola + .sala__cola {
+  margin-top: 2rem;
+}
+
+.sala__cola h3 {
+  margin-bottom: 0.5rem;
+  font-size: clamp(var(--t-l), 1.4vw, var(--t-2xl));
+}
+
+.sala__cola li {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.35rem 0;
+}
+
+.sala__orden {
+  min-width: 1.6em;
+  color: var(--pizarra-tenue);
+  font-size: clamp(var(--t-m), 1.2vw, var(--t-xl));
+  text-align: right;
+}
+
+.sala__vacio {
+  padding: 2rem 0;
+  color: var(--pizarra-tenue);
+  font-size: clamp(var(--t-xl), 2vw, var(--t-3xl));
+}
+
+.sala__vacio--chico {
+  font-size: clamp(var(--t-l), 1.4vw, var(--t-2xl));
+}
+
+.sala__pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+  padding: 1rem clamp(1.25rem, 3vw, 3rem);
+  border-top: 1px solid var(--pizarra-linea);
+  color: var(--pizarra-tenue);
+  font-size: clamp(var(--t-s), 1vw, var(--t-l));
+}
+
+.sala__estado--error {
+  color: var(--led);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .sala__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sala__proximos {
+    padding-left: 0;
+    border-left: 0;
+  }
+}

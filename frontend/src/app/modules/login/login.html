@@ -1,0 +1,107 @@
+<div class="login">
+  <section class="login__acceso" aria-labelledby="login-titulo">
+    <app-marca class="login__marca" />
+
+    <div class="login__texto">
+      <h1 id="login-titulo">Ingreso del personal</h1>
+      <p>Para administradores y operadores de la sucursal.</p>
+    </div>
+
+    @if (avisoSesion(); as aviso) {
+      <p class="nota nota--info" role="status">{{ aviso }}</p>
+    }
+
+    <form class="login__form" [formGroup]="form" (ngSubmit)="ingresar()" novalidate>
+      <div class="campo">
+        <label class="campo__etiqueta" for="usuario">Usuario</label>
+        <input
+          id="usuario"
+          class="entrada"
+          formControlName="username"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          maxlength="50"
+          [attr.aria-invalid]="errorCampo('username') ? true : null"
+          aria-describedby="usuario-error"
+        />
+        @if (errorCampo('username'); as e) {
+          <span id="usuario-error" class="campo__error">{{ e }}</span>
+        }
+      </div>
+
+      <div class="campo">
+        <label class="campo__etiqueta" for="contrasena">Contraseña</label>
+        <div class="login__clave">
+          <input
+            id="contrasena"
+            class="entrada"
+            [type]="verContrasena() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+            maxlength="72"
+            [attr.aria-invalid]="errorCampo('password') ? true : null"
+            aria-describedby="contrasena-error"
+          />
+          <button
+            type="button"
+            class="boton boton--texto"
+            (click)="verContrasena.set(!verContrasena())"
+            [attr.aria-pressed]="verContrasena()"
+          >
+            {{ verContrasena() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        @if (errorCampo('password'); as e) {
+          <span id="contrasena-error" class="campo__error">{{ e }}</span>
+        }
+      </div>
+
+      <label class="casilla login__recordar">
+        <input type="checkbox" formControlName="recordar" />
+        <span>
+          Recordar usuario en este equipo
+          <span class="campo__ayuda">Solo se guarda el nombre de usuario; nunca la contraseña ni la sesión.</span>
+        </span>
+      </label>
+
+      @if (error(); as e) {
+        <p class="nota nota--error" role="alert">{{ e }}</p>
+      }
+
+      <button type="submit" class="boton boton--primario boton--grande boton--ancho" [disabled]="enviando()">
+        {{ enviando() ? 'Verificando…' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <p class="texto-tenue texto-chico">¿No tienes cuenta? Pídela al administrador de la sucursal.</p>
+  </section>
+
+  <aside class="login__sala" aria-labelledby="sala-titulo">
+    <h2 id="sala-titulo">La sala de espera ahora</h2>
+
+    <div class="ticket login__ticket">
+      <div class="ticket__cabeza">
+        <span>Turno llamado</span>
+        <span>{{ llamado()?.servicioNombre ?? 'Sucursal' }}</span>
+      </div>
+      <div class="ticket__cuerpo">
+        @if (llamado(); as t) {
+          <app-codigo [codigo]="t.codigo" tamano="xl" />
+          <p class="login__destino">Pase a {{ t.moduloNombre }}</p>
+        } @else if (sala()) {
+          <p class="login__vacio">Ninguna ventanilla está llamando en este momento.</p>
+        } @else {
+          <p class="login__vacio">Consultando la sala de espera…</p>
+        }
+      </div>
+      <div class="corte"></div>
+      <div class="ticket__cuerpo login__cifras">
+        <p><strong>{{ enVentanilla() }}</strong> en ventanillas</p>
+        <p><strong>{{ enEspera() }}</strong> próximos en espera</p>
+      </div>
+    </div>
+
+    <a class="boton boton--secundario login__pantalla" routerLink="/pantalla">Abrir pantalla de sala de espera</a>
+  </aside>
+</div>

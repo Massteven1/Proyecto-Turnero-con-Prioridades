@@ -1,0 +1,126 @@
+.consulta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 1rem 1.25rem;
+  align-items: start;
+  margin-bottom: 1.5rem;
+}
+
+.consulta .campo + .campo {
+  margin-top: 0;
+}
+
+.consulta__botones {
+  align-self: center;
+  padding-top: 0.4rem;
+}
+
+.jornada {
+  display: grid;
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 12px;
+  background: var(--pizarra);
+  color: var(--pizarra-texto);
+}
+
+.jornada__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.jornada .texto-tenue {
+  color: var(--pizarra-tenue);
+}
+
+.jornada__resumen {
+  max-width: 48ch;
+  font-size: var(--t-2xl);
+  line-height: 1.35;
+}
+
+.jornada__resumen strong {
+  color: var(--led);
+  white-space: nowrap;
+}
+
+.reparto {
+  display: flex;
+  height: 1.25rem;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--pizarra-2);
+}
+
+.reparto__seg {
+  min-width: 4px;
+}
+
+.reparto__seg + .reparto__seg {
+  border-left: 2px solid var(--pizarra);
+}
+
+.seg--finalizado {
+  background: #5fc49a;
+}
+
+.seg--atencion {
+  background: #a993e0;
+}
+
+.seg--espera {
+  background: #c9d3dd;
+}
+
+.seg--cancelado {
+  background: #f08a76;
+}
+
+.seg--ausente {
+  background: var(--led);
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-s);
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.leyenda strong {
+  font-size: var(--t-l);
+}
+
+.leyenda__muestra {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 2px;
+}
+
+.listado__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .consulta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -4,8 +4,10 @@ import com.banco.app.entity.ModuloAtencion;
 import com.banco.app.entity.Servicio;
 
 // Salida del catalogo de modulos (GET, POST y PUT, contrato del DTO #11).
-// ocupado y turnoActivoCodigo se calculan con el turno LLAMADO/EN_ATENCION
-// vigente del modulo: si no hay turno activo, ambos quedan en false/null.
+// ocupado, turnoActivoId y turnoActivoCodigo se calculan con el turno
+// LLAMADO/EN_ATENCION vigente del modulo: si no hay turno activo, quedan en
+// false/null. turnoActivoId es un campo adicional al contrato: permite que el
+// panel del operador recupere su turno activo (GET /turnos/{id}) al recargar.
 public class ModuloDTO {
 
     private Long id;
@@ -15,9 +17,11 @@ public class ModuloDTO {
     private String nombre;
     private Boolean activo;
     private Boolean ocupado;
+    private Long turnoActivoId;
     private String turnoActivoCodigo;
 
-    public static ModuloDTO de(ModuloAtencion modulo, Servicio servicio, String turnoActivoCodigo) {
+    public static ModuloDTO de(ModuloAtencion modulo, Servicio servicio,
+            Long turnoActivoId, String turnoActivoCodigo) {
         ModuloDTO dto = new ModuloDTO();
         dto.id = modulo.getId();
         dto.servicioId = modulo.getServicioId();
@@ -25,13 +29,10 @@ public class ModuloDTO {
         dto.servicioPrefijo = servicio != null ? servicio.getCodigoPrefijo() : null;
         dto.nombre = modulo.getNombre();
         dto.activo = modulo.getActivo();
+        dto.turnoActivoId = turnoActivoId;
         dto.turnoActivoCodigo = turnoActivoCodigo;
         dto.ocupado = turnoActivoCodigo != null;
         return dto;
-    }
-
-    public static ModuloDTO de(ModuloAtencion modulo, String turnoActivoCodigo) {
-        return de(modulo, modulo.getServicio(), turnoActivoCodigo);
     }
 
     public Long getId() {
@@ -88,6 +89,14 @@ public class ModuloDTO {
 
     public void setOcupado(Boolean ocupado) {
         this.ocupado = ocupado;
+    }
+
+    public Long getTurnoActivoId() {
+        return turnoActivoId;
+    }
+
+    public void setTurnoActivoId(Long turnoActivoId) {
+        this.turnoActivoId = turnoActivoId;
     }
 
     public String getTurnoActivoCodigo() {

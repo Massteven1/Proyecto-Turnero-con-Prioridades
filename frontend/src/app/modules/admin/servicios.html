@@ -1,0 +1,131 @@
+<header class="encabezado">
+  <div>
+    <h1>Servicios</h1>
+    <p>
+      Áreas de atención de la sucursal. Cada servicio tiene su propia cola, su consecutivo diario y sus parámetros de
+      prioridad.
+    </p>
+  </div>
+</header>
+
+<div class="dos-columnas">
+  <section class="area" aria-labelledby="lista-servicios">
+    <h2 id="lista-servicios" class="solo-lector">Lista de servicios</h2>
+    <div class="filtros">
+      <div class="pastillas" role="group" aria-label="Filtrar por estado">
+        <button type="button" [attr.aria-pressed]="filtro() === 'todos'" (click)="filtro.set('todos')">Todos</button>
+        <button type="button" [attr.aria-pressed]="filtro() === 'activos'" (click)="filtro.set('activos')">Activos</button>
+        <button type="button" [attr.aria-pressed]="filtro() === 'inactivos'" (click)="filtro.set('inactivos')">Inactivos</button>
+      </div>
+    </div>
+
+    @if (error(); as e) {
+      <p class="nota nota--error" role="alert">{{ e }}</p>
+    }
+
+    @if (cargando()) {
+      <p class="cargando">Cargando servicios…</p>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Prefijo</th>
+              <th scope="col">Servicio</th>
+              <th scope="col">Módulos activos</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="acciones"><span class="solo-lector">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of visibles(); track s.id) {
+              <tr [class.fila-inactiva]="!s.activo" [class.fila-seleccionada]="editando()?.id === s.id">
+                <td><strong class="codigo">{{ s.codigoPrefijo }}</strong></td>
+                <td>
+                  <strong>{{ s.nombre }}</strong>
+                  @if (s.descripcion) {
+                    <br /><span class="texto-tenue">{{ s.descripcion }}</span>
+                  }
+                </td>
+                <td>{{ modulosActivos(s.id) }} de {{ modulosTotales(s.id) }}</td>
+                <td><app-activo [activo]="s.activo" /></td>
+                <td class="acciones">
+                  <button type="button" class="boton boton--texto" (click)="editar(s)">Editar</button>
+                  <button
+                    type="button"
+                    [class]="s.activo ? 'boton boton--peligro boton--chico' : 'boton boton--secundario boton--chico'"
+                    (click)="cambiarActivo(s)"
+                  >
+                    {{ s.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="vacio">No hay servicios con este filtro.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="editor" aria-labelledby="editor-servicio">
+    <h2 id="editor-servicio">{{ editando() ? 'Editar ' + editando()!.nombre : 'Nuevo servicio' }}</h2>
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <div class="campo">
+        <label class="campo__etiqueta" for="srv-prefijo">Prefijo del código</label>
+        <input
+          id="srv-prefijo"
+          class="entrada codigo"
+          formControlName="codigoPrefijo"
+          maxlength="10"
+          autocomplete="off"
+          (input)="mayusculas($event)"
+        />
+        <span class="campo__ayuda">
+          {{ editando() ? 'No se puede cambiar: forma parte de los códigos ya emitidos.' : 'De 2 a 10 letras mayúsculas. Ejemplo: CAJ genera CAJ-AAAAMMDD-001.' }}
+        </span>
+        @if (errorCampo('codigoPrefijo'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="srv-nombre">Nombre</label>
+        <input id="srv-nombre" class="entrada" formControlName="nombre" maxlength="100" />
+        @if (errorCampo('nombre'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="srv-descripcion">Descripción <span class="texto-tenue">(opcional)</span></label>
+        <textarea id="srv-descripcion" class="entrada" formControlName="descripcion" maxlength="255" rows="2"></textarea>
+        @if (errorCampo('descripcion'); as e) {
+          <span class="campo__error">{{ e }}</span>
+        }
+      </div>
+      @if (editando()) {
+        <div class="campo">
+          <label class="casilla">
+            <input type="checkbox" formControlName="activo" />
+            <span>Servicio activo</span>
+          </label>
+        </div>
+      }
+      @if (errorForm(); as e) {
+        <p class="nota nota--error" role="alert">{{ e }}</p>
+      }
+      <div class="grupo-botones">
+        <button type="submit" class="boton boton--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : editando() ? 'Guardar cambios' : 'Crear servicio' }}
+        </button>
+        @if (editando()) {
+          <button type="button" class="boton boton--secundario" (click)="nuevo()">Descartar</button>
+        }
+      </div>
+    </form>
+  </section>
+</div>
+
+<app-confirmacion />

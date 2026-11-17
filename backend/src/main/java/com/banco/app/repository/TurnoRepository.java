@@ -46,9 +46,9 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     Optional<Turno> findByIdForUpdate(@Param("id") Long id);
 
     // GET /modulos: turno activo (LLAMADO o EN_ATENCION) por modulo, para
-    // calcular "ocupado" y "turnoActivoCodigo" sin una consulta por fila
+    // calcular "ocupado", "turnoActivoId" y "turnoActivoCodigo" sin una consulta por fila
     @Query("""
-            select t.moduloId as moduloId, t.codigo as codigo
+            select t.id as id, t.moduloId as moduloId, t.codigo as codigo
             from Turno t
             where t.moduloId in :moduloIds
               and t.estado in :estados

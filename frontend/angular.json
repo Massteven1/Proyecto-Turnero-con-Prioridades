@@ -25,6 +25,8 @@
               }
             ],
             "styles": [
+              "node_modules/@fontsource-variable/atkinson-hyperlegible-next/wght.css",
+              "node_modules/@fontsource-variable/atkinson-hyperlegible-mono/wght.css",
               "src/styles.css"
             ]
           },

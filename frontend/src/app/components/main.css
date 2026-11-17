@@ -1,0 +1,96 @@
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 2rem;
+  padding: 0.6rem clamp(1rem, 3vw, 2rem);
+  background: var(--pizarra);
+  color: var(--pizarra-texto);
+}
+
+.barra__marca {
+  color: inherit;
+  text-decoration: none;
+}
+
+.barra__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.barra__nav a {
+  padding: 0.45rem 0.8rem;
+  border-radius: 6px;
+  color: var(--pizarra-tenue);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.barra__nav a:hover {
+  background: var(--pizarra-2);
+  color: var(--pizarra-texto);
+}
+
+.barra__nav a.activo {
+  background: var(--pizarra-2);
+  color: var(--pizarra-texto);
+  box-shadow: inset 0 -3px 0 var(--led);
+}
+
+.barra__cuenta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.barra__nombre {
+  display: grid;
+  text-align: right;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.barra__rol {
+  font-size: var(--t-xs);
+  font-weight: 400;
+  color: var(--pizarra-tenue);
+}
+
+.barra .boton--secundario {
+  border-color: var(--pizarra-linea);
+  background: transparent;
+  color: var(--pizarra-texto);
+}
+
+.barra .boton--secundario:hover {
+  background: var(--pizarra-2);
+  color: var(--pizarra-texto);
+}
+
+.barra :focus-visible {
+  outline-color: var(--led);
+}
+
+.contenido {
+  padding: clamp(1rem, 2.5vw, 2rem);
+}
+
+.contenido:focus {
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .barra__cuenta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .barra__nombre {
+    text-align: left;
+  }
+}

@@ -4,6 +4,8 @@ package com.banco.app.repository;
 // activo (LLAMADO o EN_ATENCION) que ocupa cada ventanilla.
 public interface TurnoActivoView {
 
+    Long getId();
+
     Long getModuloId();
 
     String getCodigo();
