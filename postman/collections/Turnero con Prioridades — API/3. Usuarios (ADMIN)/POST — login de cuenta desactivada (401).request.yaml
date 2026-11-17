@@ -13,5 +13,9 @@ scripts:
       pm.test('401 Unauthorized', () => pm.response.to.have.status(401));
       const r = pm.response.json();
       pm.test('ruta del ErrorResponseDTO', () => pm.expect(r.ruta).to.eql('/api/v1/auth/login'));
+      pm.test('mensaje genérico: no revela que la cuenta existe', () => {
+        pm.expect(r.mensaje).to.eql('Credenciales inválidas');
+        pm.expect(r.mensaje.toLowerCase()).to.not.include('inactiva');
+      });
     language: text/javascript
 order: 6100
