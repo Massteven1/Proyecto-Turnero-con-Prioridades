@@ -1,0 +1,24 @@
+$kind: http-request
+description: |-
+  El detalle de un turno del día también está disponible para OPERADOR (el corte
+  por fecha solo bloquea los turnos históricos). Devuelve el mismo contenido que
+  ve el ADMIN, incluido el identificador del cliente.
+url: "{{baseUrl}}/api/v1/turnos/{{historialTurnoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con token OPERADOR sobre un turno de hoy', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('mismo detalle que ve el ADMIN', () => {
+        pm.expect(String(r.id)).to.eql(pm.collectionVariables.get('historialTurnoId'));
+        pm.expect(r.estado).to.eql('FINALIZADO');
+        pm.expect(r.transiciones).to.be.an('array').with.lengthOf(4);
+      });
+      pm.test('la ruta protegida conserva el identificador del cliente', () => {
+        pm.expect(r.identificadorCliente).to.eql('CC 8001 - Historial Base');
+      });
+    language: text/javascript
+order: 44300

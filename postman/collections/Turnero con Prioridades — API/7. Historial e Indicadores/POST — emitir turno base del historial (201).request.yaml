@@ -1,0 +1,31 @@
+$kind: http-request
+description: |-
+  Primer turno Regular (categoría 4) del servicio de historial: abre el FIFO y
+  es el que la carpeta recorre hasta FINALIZADO. Guarda {{historialTurnoId}},
+  {{historialTurnoCodigo}} y la fecha de operación en {{historialFecha}}.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 8001 - Historial Base","servicioId":{{historialServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('historialFecha', r.fechaOperacion);
+      pm.collectionVariables.set('historialTurnoId', String(r.id));
+      pm.collectionVariables.set('historialTurnoCodigo', r.codigo);
+      pm.test('consecutivo diario 001', () => pm.expect(r.consecutivo).to.eql(1));
+      pm.test('regular recién emitido, sin envejecer', () => {
+        pm.expect(r.estado).to.eql('EN_ESPERA');
+        pm.expect(r.preferenteOriginal).to.eql(false);
+        pm.expect(r.envejecido).to.eql(false);
+        pm.expect(r.conjuntoEfectivo).to.eql('REGULAR');
+        pm.expect(r.categoriaOriginalNombre).to.eql('Regular');
+      });
+    language: text/javascript
+order: 43200

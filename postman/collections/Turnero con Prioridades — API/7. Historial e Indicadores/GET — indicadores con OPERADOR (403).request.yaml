@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Un OPERADOR autenticado no puede ver los indicadores: @PreAuthorize exige
+  ROLE_ADMIN y el rechazo conserva la forma del ErrorResponseDTO.
+url: "{{baseUrl}}/api/v1/turnos/indicadores"
+method: GET
+headers:
+  Authorization: Bearer {{tokenOperador}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('403 Forbidden con token OPERADOR', () => pm.response.to.have.status(403));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del 403', () => {
+        pm.expect(r.status).to.eql(403);
+        pm.expect(r.error).to.eql('Forbidden');
+        pm.expect(r.ruta).to.eql('/api/v1/turnos/indicadores');
+      });
+    language: text/javascript
+order: 43900

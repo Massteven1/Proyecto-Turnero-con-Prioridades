@@ -1,0 +1,20 @@
+$kind: http-request
+description: |-
+  Un id inexistente devuelve 404 con el ErrorResponseDTO del contrato y la ruta
+  exacta del recurso pedido.
+url: "{{baseUrl}}/api/v1/turnos/999999"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('404 Not Found', () => pm.response.to.have.status(404));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del 404', () => {
+        pm.expect(r.status).to.eql(404);
+        pm.expect(r.mensaje).to.eql('Turno no encontrado');
+        pm.expect(r.ruta).to.eql('/api/v1/turnos/999999');
+      });
+    language: text/javascript
+order: 44500

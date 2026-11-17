@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  Segundo turno Regular del servicio: queda EN_ESPERA y sirve para que los
+  indicadores acotados muestren un finalizado y un pendiente. Guarda
+  {{historialSegundoTurnoId}}.
+url: "{{baseUrl}}/api/v1/turnos"
+method: POST
+headers:
+  Authorization: Bearer {{tokenOperador}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"identificadorCliente":"CC 8002 - Historial Espera","servicioId":{{historialServicioId}},"categoriaId":4}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('historialSegundoTurnoId', String(r.id));
+      pm.test('consecutivo diario 002', () => pm.expect(r.consecutivo).to.eql(2));
+      pm.test('espera sin asignación', () => {
+        pm.expect(r.estado).to.eql('EN_ESPERA');
+        pm.expect(r.moduloId).to.eql(null);
+        pm.expect(r.operadorId).to.eql(null);
+      });
+    language: text/javascript
+order: 43300

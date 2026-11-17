@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  El segundo turno sigue EN_ESPERA: su detalle no tiene módulo ni operador y el
+  historial contiene una sola fila, la emisión inicial. Confirma que el detalle
+  no inventa transiciones que no ocurrieron.
+url: "{{baseUrl}}/api/v1/turnos/{{historialSegundoTurnoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('turno en espera sin asignación', () => {
+        pm.expect(r.estado).to.eql('EN_ESPERA');
+        pm.expect(r.moduloId).to.eql(null);
+        pm.expect(r.operadorId).to.eql(null);
+        pm.expect(r.fechaLlamado).to.eql(null);
+        pm.expect(r.fechaInicioAtencion).to.eql(null);
+      });
+      pm.test('una sola transición: la emisión inicial', () => {
+        pm.expect(r.transiciones).to.be.an('array').with.lengthOf(1);
+        pm.expect(r.transiciones[0].estadoAnterior).to.eql(null);
+        pm.expect(r.transiciones[0].estadoNuevo).to.eql('EN_ESPERA');
+      });
+    language: text/javascript
+order: 44400

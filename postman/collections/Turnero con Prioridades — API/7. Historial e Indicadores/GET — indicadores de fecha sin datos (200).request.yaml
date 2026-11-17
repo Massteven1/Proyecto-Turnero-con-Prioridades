@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  Una fecha sin turnos no es un error: devuelve 200 con todos los conteos en 0 y
+  el promedio en null (no 0), porque no hay turnos atendidos que promediar.
+url: "{{baseUrl}}/api/v1/turnos/indicadores?fecha=1900-01-01"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('devuelve la fecha consultada sin inventar datos', () => {
+        pm.expect(r.fechaConsulta).to.eql('1900-01-01');
+        pm.expect(r.totalEmitidos).to.eql(0);
+      });
+      pm.test('todos los estados en cero', () => {
+        pm.expect(r.totalFinalizados).to.eql(0);
+        pm.expect(r.totalCancelados).to.eql(0);
+        pm.expect(r.totalAusentes).to.eql(0);
+        pm.expect(r.totalEnEspera).to.eql(0);
+        pm.expect(r.totalEnAtencionOLlamado).to.eql(0);
+      });
+      pm.test('sin turnos atendidos el promedio es null', () => {
+        pm.expect(r.tiempoPromedioEsperaSegundos).to.eql(null);
+        pm.expect(r.tiempoPromedioEsperaFormateado).to.eql(null);
+      });
+    language: text/javascript
+order: 44000

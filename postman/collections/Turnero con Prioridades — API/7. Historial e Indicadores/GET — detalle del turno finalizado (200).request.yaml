@@ -1,0 +1,64 @@
+$kind: http-request
+description: |-
+  Detalle del turno que la carpeta recorrió hasta FINALIZADO: todos los campos de
+  TurnoDTO y, al mismo nivel, las cuatro transiciones del historial. Comprueba
+  el encadenamiento (estadoAnterior de cada una es el estadoNuevo de la previa),
+  el orden cronológico, el actor de cada cambio y que la última coincide con el
+  estado actual.
+url: "{{baseUrl}}/api/v1/turnos/{{historialTurnoId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con token ADMIN', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('trae todos los campos de TurnoDTO y las transiciones', () => {
+        ['id', 'codigo', 'servicioId', 'servicioNombre', 'categoriaId',
+         'categoriaOriginalNombre', 'preferenteOriginal', 'envejecido',
+         'preferenteEfectivo', 'conjuntoEfectivo', 'moduloId', 'moduloNombre',
+         'operadorId', 'operadorUsername', 'fechaOperacion', 'consecutivo',
+         'identificadorCliente', 'estado', 'fechaIngreso', 'fechaLlamado',
+         'fechaInicioAtencion', 'fechaFinAtencion', 'fechaCancelacionAusencia',
+         'motivoCancelacionAusencia', 'transiciones'].forEach(campo => {
+          pm.expect(r).to.have.property(campo);
+        });
+      });
+      pm.test('es el turno recorrido por la carpeta', () => {
+        pm.expect(String(r.id)).to.eql(pm.collectionVariables.get('historialTurnoId'));
+        pm.expect(r.codigo).to.eql(pm.collectionVariables.get('historialTurnoCodigo'));
+        pm.expect(r.estado).to.eql('FINALIZADO');
+      });
+      pm.test('cuatro transiciones en orden cronológico', () => {
+        pm.expect(r.transiciones).to.be.an('array').with.lengthOf(4);
+        pm.expect(r.transiciones.map(t => t.estadoNuevo))
+          .to.eql(['EN_ESPERA', 'LLAMADO', 'EN_ATENCION', 'FINALIZADO']);
+        const fechas = r.transiciones.map(t => t.fechaCambio);
+        pm.expect(fechas).to.eql([...fechas].sort());
+      });
+      pm.test('la emisión inicial no tiene estado anterior', () => {
+        pm.expect(r.transiciones[0].estadoAnterior).to.eql(null);
+      });
+      pm.test('cada transición encadena con la anterior', () => {
+        for (let i = 1; i < r.transiciones.length; i++) {
+          pm.expect(r.transiciones[i].estadoAnterior)
+            .to.eql(r.transiciones[i - 1].estadoNuevo);
+        }
+      });
+      pm.test('la última transición coincide con el estado actual', () => {
+        pm.expect(r.transiciones[r.transiciones.length - 1].estadoNuevo).to.eql(r.estado);
+      });
+      pm.test('cada transición trae la forma del contrato y su actor', () => {
+        r.transiciones.forEach(t => {
+          pm.expect(t).to.have.all.keys('id', 'estadoAnterior', 'estadoNuevo',
+            'fechaCambio', 'operadorUsername', 'motivo');
+          pm.expect(t.operadorUsername).to.not.eql(null);
+        });
+      });
+      pm.test('la emisión la hizo operador1 y el ciclo lo ejecutó admin', () => {
+        pm.expect(r.transiciones[0].operadorUsername).to.eql('operador1');
+        pm.expect(r.transiciones[3].operadorUsername).to.eql('admin');
+      });
+    language: text/javascript
+order: 44200

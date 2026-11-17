@@ -1,0 +1,44 @@
+$kind: http-request
+description: |-
+  Indicadores globales del día (sin filtros): el backend usa la fecha actual de
+  America/Bogota. La semilla tiene 12 turnos y la carpeta agrega 2, por eso las
+  cotas son >= 14 y la prueba fuerte es la coherencia interna: los cinco conteos
+  por estado suman totalEmitidos, el promedio no es null y su texto coincide
+  con los segundos redondeados.
+url: "{{baseUrl}}/api/v1/turnos/indicadores"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK con token ADMIN', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('sin filtro usa la fecha de los turnos de la carpeta', () => {
+        pm.expect(r.fechaConsulta).to.eql(pm.collectionVariables.get('historialFecha'));
+        pm.expect(r.servicioId).to.eql(null);
+      });
+      pm.test('los conteos por estado suman totalEmitidos', () => {
+        const suma = r.totalFinalizados + r.totalCancelados + r.totalAusentes
+          + r.totalEnEspera + r.totalEnAtencionOLlamado;
+        pm.expect(suma).to.eql(r.totalEmitidos);
+      });
+      pm.test('incluye la semilla y los dos turnos de la carpeta', () => {
+        pm.expect(r.totalEmitidos).to.be.at.least(14);
+        pm.expect(r.totalFinalizados).to.be.at.least(1);
+        pm.expect(r.totalCancelados).to.be.at.least(1);
+        pm.expect(r.totalAusentes).to.be.at.least(1);
+      });
+      pm.test('promedio de espera presente y con formato del contrato', () => {
+        pm.expect(r.tiempoPromedioEsperaSegundos).to.be.a('number');
+        pm.expect(r.tiempoPromedioEsperaSegundos).to.be.at.least(0);
+        pm.expect(r.tiempoPromedioEsperaFormateado).to.match(/^\d{2,} min \d{2} seg$/);
+      });
+      pm.test('el texto redondea los segundos del promedio', () => {
+        const segundos = Math.round(r.tiempoPromedioEsperaSegundos);
+        const esperado = String(Math.floor(segundos / 60)).padStart(2, '0')
+          + ' min ' + String(segundos % 60).padStart(2, '0') + ' seg';
+        pm.expect(r.tiempoPromedioEsperaFormateado).to.eql(esperado);
+      });
+    language: text/javascript
+order: 43700

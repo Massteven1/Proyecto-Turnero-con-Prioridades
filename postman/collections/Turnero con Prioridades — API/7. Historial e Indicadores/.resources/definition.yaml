@@ -1,0 +1,28 @@
+$kind: collection
+description: |-
+  Historial e indicadores — Fase 4b.
+  Cubre GET /api/v1/turnos/{id} (detalle con transiciones cronológicas) y
+  GET /api/v1/turnos/indicadores (conteos por estado y promedio de espera),
+  con ADMIN y OPERADOR.
+
+  Requisitos antes de correrlo:
+  - Ejecutar "Login OK — admin (guarda token)" (carpeta 1): guarda {{token}}.
+  - Ejecutar "Login OK — operador1" (carpeta 1): guarda {{tokenOperador}}.
+  - Base recién cargada con db/banco_turnero_db.sql.
+
+  La carpeta crea su propio servicio, módulo y dos turnos regulares, y recorre
+  el ciclo completo del primero: LLAMADO, EN_ATENCION y FINALIZADO. Así el
+  detalle muestra cuatro transiciones encadenadas y los indicadores acotados al
+  servicio quedan en 2 emitidos, 1 finalizado y 1 en espera.
+
+  Los indicadores globales suman la semilla más estos turnos, por eso las
+  aserciones usan cotas (>=) y comprueban la coherencia interna (la suma de los
+  conteos por estado es igual a totalEmitidos) en lugar de números fijos.
+
+  El llamado se hace con {{token}} (ADMIN) porque en la semilla operador1 y
+  operador2 ya tienen un turno activo.
+
+  Nota: emitir turnos es irreversible (triggers de la base), así que cada
+  corrida deja residuo. Para repetir los tests, recargar la semilla:
+  DROP DATABASE IF EXISTS banco_turnero_db; y volver a ejecutar db/banco_turnero_db.sql.
+order: 7000

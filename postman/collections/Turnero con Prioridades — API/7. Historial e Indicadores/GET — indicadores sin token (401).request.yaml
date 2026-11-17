@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  Los indicadores son exclusivos del rol ADMIN: sin token la petición corta en
+  la autenticación y devuelve 401 con el ErrorResponseDTO del contrato.
+url: "{{baseUrl}}/api/v1/turnos/indicadores"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized sin token', () => pm.response.to.have.status(401));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del 401', () => {
+        pm.expect(r.status).to.eql(401);
+        pm.expect(r.mensaje).to.include('JWT');
+        pm.expect(r.ruta).to.eql('/api/v1/turnos/indicadores');
+      });
+    language: text/javascript
+order: 43800

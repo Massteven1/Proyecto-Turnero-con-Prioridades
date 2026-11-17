@@ -1,0 +1,37 @@
+$kind: http-request
+description: |-
+  Crea el servicio de historial con prefijo y nombre únicos por corrida. El
+  script previo genera {{historialServicioPrefijo}} y
+  {{historialServicioNombre}}; el test guarda {{historialServicioId}}. El alta
+  crea también su fila 1:1 de estado de cola, con el contador de preferentes
+  en 0.
+url: "{{baseUrl}}/api/v1/servicios"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"codigoPrefijo":"{{historialServicioPrefijo}}","nombre":"{{historialServicioNombre}}","descripcion":"Servicio de prueba de historial e indicadores"}'
+scripts:
+  - type: beforeRequest
+    code: |-
+      const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let prefijo = '';
+      for (let i = 0; i < 4; i++) {
+        prefijo += letras.charAt(Math.floor(Math.random() * letras.length));
+      }
+      pm.collectionVariables.set('historialServicioPrefijo', prefijo);
+      pm.collectionVariables.set('historialServicioNombre', 'Servicio Historial ' + Date.now());
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('historialServicioId', String(r.id));
+      pm.test('nace activo con el prefijo enviado', () => {
+        pm.expect(r.activo).to.eql(true);
+        pm.expect(r.codigoPrefijo).to.eql(pm.collectionVariables.get('historialServicioPrefijo'));
+      });
+    language: text/javascript
+order: 43000

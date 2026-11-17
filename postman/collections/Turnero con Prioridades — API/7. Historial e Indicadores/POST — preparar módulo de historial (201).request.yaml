@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  Ventanilla del servicio de historial. Guarda {{historialModuloId}} y
+  {{historialModuloNombre}}; es el módulo que recibe el llamado del ciclo que
+  después se consulta en el detalle.
+url: "{{baseUrl}}/api/v1/modulos"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"servicioId":{{historialServicioId}},"nombre":"Modulo Historial {{historialServicioPrefijo}}"}'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', () => pm.response.to.have.status(201));
+      const r = pm.response.json();
+      pm.collectionVariables.set('historialModuloId', String(r.id));
+      pm.collectionVariables.set('historialModuloNombre', r.nombre);
+      pm.test('pertenece al servicio de historial y nace libre', () => {
+        pm.expect(String(r.servicioId)).to.eql(pm.collectionVariables.get('historialServicioId'));
+        pm.expect(r.ocupado).to.eql(false);
+        pm.expect(r.turnoActivoCodigo).to.eql(null);
+      });
+    language: text/javascript
+order: 43100

@@ -1,0 +1,18 @@
+$kind: http-request
+description: |-
+  El detalle exige JWT: sin token la petición corta en la autenticación y
+  devuelve 401 con el ErrorResponseDTO.
+url: "{{baseUrl}}/api/v1/turnos/{{historialTurnoId}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 Unauthorized sin token', () => pm.response.to.have.status(401));
+      const r = pm.response.json();
+      pm.test('ErrorResponseDTO del 401', () => {
+        pm.expect(r.status).to.eql(401);
+        pm.expect(r.mensaje).to.include('JWT');
+        pm.expect(r.error).to.eql('Unauthorized');
+      });
+    language: text/javascript
+order: 44700

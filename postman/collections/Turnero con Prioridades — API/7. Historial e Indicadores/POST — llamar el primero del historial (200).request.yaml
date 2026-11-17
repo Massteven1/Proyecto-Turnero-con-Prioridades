@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  Llamado real del primer turno del servicio: el FIFO entre regulares devuelve
+  el emitido primero, que pasa a LLAMADO con el módulo y la cuenta del JWT. Usa
+  {{token}} (ADMIN) porque en la semilla operador1 y operador2 ya tienen un
+  turno activo.
+url: "{{baseUrl}}/api/v1/modulos/{{historialModuloId}}/siguiente"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('campos del SiguienteTurnoResponseDTO', () => pm.expect(r).to.have.all.keys('colaVacia', 'mensaje', 'turno', 'contadorPreferentesActual'));
+      pm.test('llama al primer turno de la carpeta', () => {
+        pm.expect(r.colaVacia).to.eql(false);
+        pm.expect(String(r.turno.id)).to.eql(pm.collectionVariables.get('historialTurnoId'));
+        pm.expect(r.turno.codigo).to.eql(pm.collectionVariables.get('historialTurnoCodigo'));
+      });
+      pm.test('queda LLAMADO con el módulo y el operador del JWT', () => {
+        pm.expect(r.turno.estado).to.eql('LLAMADO');
+        pm.expect(String(r.turno.moduloId)).to.eql(pm.collectionVariables.get('historialModuloId'));
+        pm.expect(r.turno.operadorUsername).to.eql('admin');
+        pm.expect(r.turno.fechaLlamado).to.not.eql(null);
+      });
+      pm.test('sin preferentes en la cola el contador sigue en 0', () => pm.expect(r.contadorPreferentesActual).to.eql(0));
+    language: text/javascript
+order: 43400

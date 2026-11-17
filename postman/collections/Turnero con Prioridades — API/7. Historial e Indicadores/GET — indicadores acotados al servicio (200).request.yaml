@@ -1,0 +1,34 @@
+$kind: http-request
+description: |-
+  Indicadores acotados al servicio de la carpeta y a la fecha de sus turnos:
+  exactamente 2 emitidos, 1 finalizado y 1 en espera, sin cancelados ni
+  ausentes. El promedio existe porque el turno finalizado registró inicio de
+  atención.
+url: "{{baseUrl}}/api/v1/turnos/indicadores?fecha={{historialFecha}}&servicioId={{historialServicioId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', () => pm.response.to.have.status(200));
+      const r = pm.response.json();
+      pm.test('acota la fecha y el servicio pedidos', () => {
+        pm.expect(r.fechaConsulta).to.eql(pm.collectionVariables.get('historialFecha'));
+        pm.expect(String(r.servicioId)).to.eql(pm.collectionVariables.get('historialServicioId'));
+      });
+      pm.test('2 emitidos: 1 finalizado y 1 en espera', () => {
+        pm.expect(r.totalEmitidos).to.eql(2);
+        pm.expect(r.totalFinalizados).to.eql(1);
+        pm.expect(r.totalEnEspera).to.eql(1);
+        pm.expect(r.totalEnAtencionOLlamado).to.eql(0);
+        pm.expect(r.totalCancelados).to.eql(0);
+        pm.expect(r.totalAusentes).to.eql(0);
+      });
+      pm.test('promedio del turno atendido con formato del contrato', () => {
+        pm.expect(r.tiempoPromedioEsperaSegundos).to.be.a('number');
+        pm.expect(r.tiempoPromedioEsperaSegundos).to.be.at.least(0);
+        pm.expect(r.tiempoPromedioEsperaFormateado).to.match(/^\d{2,} min \d{2} seg$/);
+      });
+    language: text/javascript
+order: 44100

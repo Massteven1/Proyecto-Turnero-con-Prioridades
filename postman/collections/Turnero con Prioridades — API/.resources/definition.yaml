@@ -7,6 +7,7 @@ description: |-
   Fase 2b — Catálogos: servicios (alta con estado de cola 1:1, prefijo inmutable, baja con cascada), módulos (nombre único normalizado, ocupación, historial), categorías (solo renombre) y parámetros de cola (rangos y ajuste del contador).
   Fase 3 — Turnos: emisión con consecutivo diario y snapshot de categoría, llamado atómico con prioridad N:1 y envejecimiento, y transiciones de estado con motivo, propiedad del turno y rol.
   Fase 4a — Consulta: cola proyectada por servicio (modo=COLA), historial con filtros (modo=HISTORIAL, solo ADMIN) y pantalla pública sin datos personales.
+  Fase 4b — Historial e indicadores: detalle del turno con transiciones cronológicas (ADMIN cualquier fecha, OPERADOR solo hoy) e indicadores por fecha y servicio (conteos por estado y promedio de espera).
   Las siguientes fases agregan sus endpoints aquí mismo.
 variables:
   baseUrl: http://localhost:8080
@@ -45,3 +46,12 @@ variables:
   consultaPreferente3Codigo: ""
   consultaPrimeroProyectadoCodigo: ""
   consultaLlamadoCodigo: ""
+  historialServicioPrefijo: ""
+  historialServicioNombre: ""
+  historialServicioId: ""
+  historialModuloNombre: ""
+  historialModuloId: ""
+  historialFecha: ""
+  historialTurnoId: ""
+  historialTurnoCodigo: ""
+  historialSegundoTurnoId: ""
