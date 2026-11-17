@@ -1,6 +1,6 @@
 $kind: http-request
 description: |-
-  El módulo 1 tiene el turno LLAMADO CAJ-20261111-001: no puede desactivarse.
+  El módulo 1 tiene el turno LLAMADO CAJ del día: no puede desactivarse.
 url: "{{baseUrl}}/api/v1/modulos/1"
 method: PUT
 headers:

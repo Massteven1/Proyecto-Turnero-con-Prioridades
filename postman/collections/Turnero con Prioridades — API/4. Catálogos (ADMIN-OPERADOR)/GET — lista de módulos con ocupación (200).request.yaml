@@ -1,7 +1,7 @@
 $kind: http-request
 description: |-
   Lista todos los módulos (activos e inactivos) con su servicio y el turno activo.
-  La semilla deja el módulo 1 ocupado con el turno CAJ-20261111-001.
+  La semilla deja el módulo 1 ocupado con el primer turno CAJ del día.
 url: "{{baseUrl}}/api/v1/modulos"
 method: GET
 headers:
@@ -15,7 +15,8 @@ scripts:
       const m1 = r.find(m => m.id === 1);
       pm.test('el módulo 1 está ocupado por su turno activo', () => {
         pm.expect(m1.ocupado).to.eql(true);
-        pm.expect(m1.turnoActivoCodigo).to.eql('CAJ-20261111-001');
+        // El código lleva la fecha del día de la corrida: no se fija una fecha.
+        pm.expect(m1.turnoActivoCodigo).to.match(/^CAJ-\d{8}-001$/);
       });
       pm.test('campos del ModuloDTO', () => {
         r.forEach(m => pm.expect(m).to.have.all.keys('id', 'servicioId', 'servicioNombre', 'servicioPrefijo', 'nombre', 'activo', 'ocupado', 'turnoActivoCodigo'));

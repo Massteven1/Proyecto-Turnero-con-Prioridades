@@ -28,6 +28,10 @@ scripts:
           pm.expect(t.fechaLlamado).to.be.a('string');
         });
       });
+      pm.test('turnosEnModulos ordenado por fecha_llamado descendente', () => {
+        const fechas = r.turnosEnModulos.map(t => t.fechaLlamado);
+        pm.expect(fechas).to.eql([...fechas].sort().reverse());
+      });
       pm.test('la proyección del servicio de prueba es 1..4 con los preferentes primero', () => {
         const nombre = pm.collectionVariables.get('consultaServicioNombre');
         const propios = r.proximosEnEspera.filter(t => t.servicioNombre === nombre);
