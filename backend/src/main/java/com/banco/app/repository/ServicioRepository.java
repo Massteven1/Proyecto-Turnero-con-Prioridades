@@ -24,8 +24,8 @@ public interface ServicioRepository extends JpaRepository<Servicio, Long> {
     List<Servicio> findByActivoOrderByIdAsc(Boolean activo);
 
     // Bloqueo pesimista de la fila del servicio, primer eslabon del orden global
-    // de bloqueos. SQL nativo a proposito: Hibernate 7 genera "FOR UPDATE OF
-    // <alias>" en HQL y MariaDB no acepta esa clausula (error de sintaxis).
+    // de bloqueos. SQL nativo a proposito: se usa un FOR UPDATE simple en
+    // lugar del "FOR UPDATE OF <alias>" de HQL.
     @Query(value = "SELECT * FROM servicios WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<Servicio> findByIdForUpdate(@Param("id") Long id);
 

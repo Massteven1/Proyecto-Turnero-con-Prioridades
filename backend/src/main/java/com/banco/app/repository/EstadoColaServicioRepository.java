@@ -19,7 +19,7 @@ public interface EstadoColaServicioRepository extends JpaRepository<EstadoColaSe
     List<EstadoColaServicio> listarConServicio();
 
     // Version con bloqueo pesimista (Fases 2b, 3 y 4). SQL nativo a proposito:
-    // Hibernate 7 genera "FOR UPDATE OF <alias>" en HQL y MariaDB lo rechaza.
+    // se usa un FOR UPDATE simple en lugar del "FOR UPDATE OF <alias>" de HQL.
     @Query(value = "SELECT * FROM estado_cola_servicio WHERE servicio_id = :servicioId FOR UPDATE",
             nativeQuery = true)
     Optional<EstadoColaServicio> bloquearPorServicioId(@Param("servicioId") Long servicioId);

@@ -13,7 +13,7 @@ Sistema de turnos bancarios con categorías preferentes, atención por módulos,
 ## Requisitos
 
 - JDK 21 o superior y Maven 3.9.
-- MySQL 8.0.16 o superior, o MariaDB 10.4 o superior. Probado con MariaDB 10.4.32 de XAMPP.
+- MySQL 8.0.16 o superior.
 - Node.js 22.22, 24.15 o 26 (probado con 26.2.0) y npm.
 
 ## Puesta en marcha
@@ -132,12 +132,10 @@ La plantilla completa está en `backend/src/main/resources/application-example.y
 - **`JWT_SECRET debe tener al menos 32 bytes`**: usar un secreto más largo.
 - **Puerto 8080 ocupado**: buscar el proceso con `Get-NetTCPConnection -LocalPort 8080 -State Listen | Select-Object OwningProcess` y detenerlo con `Stop-Process -Id <PID>`.
 - **No conecta a la base**: iniciar MySQL en XAMPP y comprobar que el script está importado. Hibernate valida el esquema al arrancar y falla si falta una tabla o columna.
-- **Aviso `HHH000511` sobre la versión 5.5.5**: es la forma en que MariaDB se identifica ante el driver de MySQL y no afecta el funcionamiento.
 
 ## Decisiones frente a la documentación
 
 - Se usa Spring Boot 4.1.2, la versión vigente al iniciar el proyecto, en lugar de la anterior que cita el docx.
-- Se usa MariaDB 10.4.32 de XAMPP en lugar de MySQL 8.0.16. Soporta las restricciones `CHECK` y las columnas generadas del esquema.
 - Modificar un usuario con un turno activo responde 409 solo al desactivarlo o cambiarle el rol, no al renombrarlo ni al cambiar su contraseña.
 - `GET /api/v1/turnos` atiende la cola (`?modo=COLA`, por defecto) y el historial (`?modo=HISTORIAL`, solo ADMIN).
 - Pedir la cola de un `servicioId` inexistente responde 404.

@@ -37,7 +37,7 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
 
     // Fase 3: bloqueo del turno candidato antes de pasarlo a LLAMADO y del
     // turno objetivo antes de cambiar su estado. SQL nativo a proposito:
-    // Hibernate 7 genera "FOR UPDATE OF <alias>" en HQL y MariaDB lo rechaza.
+    // se usa un FOR UPDATE simple en lugar del "FOR UPDATE OF <alias>" de HQL.
     // Si el turno ya esta administrado en el contexto de persistencia, el
     // bloqueo se toma pero se devuelve la instancia con los valores previos a
     // la espera: desvincularla antes (entityManager.detach) es obligatorio para
@@ -139,7 +139,7 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
             @Param("servicioId") Long servicioId);
 
     // GET /turnos/indicadores: promedio de espera en segundos, solo sobre turnos
-    // con inicio de atencion. TIMESTAMPDIFF es del motor (MariaDB); el driver
+    // con inicio de atencion. TIMESTAMPDIFF es del motor (MySQL); el driver
     // devuelve DECIMAL, por eso el retorno conserva el numero sin tiparlo y el
     // servicio lo convierte con Number.
     @Query(value = """

@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 //   para mantener la trazabilidad de la asignacion original.
 // - categoria_nombre_snapshot guarda el nombre de la categoria AL EMITIRSE el turno:
 //   si luego se renombra la categoria, el turno conserva su denominacion historica.
-// - modulo_activo_id y operador_activo_id son columnas GENERADAS por MariaDB
+// - modulo_activo_id y operador_activo_id son columnas GENERADAS por MySQL
 //   (SOLO LECTURA): valen el id solo cuando el estado es LLAMADO/EN_ATENCION y
 //   sostienen los UNIQUE uk_turnos_modulo_activo y uk_turnos_operador_activo
 //   que impiden fisicamente dobles turnos activos. Nunca se escriben desde Java.
@@ -93,7 +93,7 @@ public class Turno {
     @Column(name = "motivo_cancelacion_ausencia")
     private String motivoCancelacionAusencia;
 
-    // ---- Columnas generadas por MariaDB: SOLO LECTURA, nunca se escriben ----
+    // ---- Columnas generadas por MySQL: SOLO LECTURA, nunca se escriben ----
     @Column(name = "modulo_activo_id", insertable = false, updatable = false)
     private Long moduloActivoId;
 

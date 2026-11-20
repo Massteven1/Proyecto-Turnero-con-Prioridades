@@ -4,7 +4,7 @@
 # Para usarlo: copiarlo a application.yml (o definir las variables de entorno
 # del sistema) con valores reales, y NUNCA subir credenciales a Git.
 # Las variables que exige la documentacion son:
-#   DB_URL, DB_USERNAME, DB_PASSWORD (conexion MySQL/MariaDB)
+#   DB_URL, DB_USERNAME, DB_PASSWORD (conexion MySQL)
 #   JWT_SECRET (OBLIGATORIA: sin ella la aplicacion no arranca)
 #   JWT_EXPIRATION_MS (opcional, 7200000 = 2 horas por defecto)
 # Opcionales de endurecimiento:

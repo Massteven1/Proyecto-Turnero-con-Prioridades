@@ -26,8 +26,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     // PUT /usuarios/{id}: bloquea la cuenta objetivo durante la transaccion
     // antes de leer su estado vigente (contrato del endpoint).
-    // SQL nativo a proposito: Hibernate 7 genera "FOR UPDATE OF <alias>" en
-    // HQL y MariaDB no acepta esa clausula (error de sintaxis).
+    // SQL nativo a proposito: se usa un FOR UPDATE simple en lugar del
+    // "FOR UPDATE OF <alias>" de HQL.
     @Query(value = "SELECT * FROM usuarios WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<Usuario> findByIdForUpdate(@Param("id") Long id);
 
@@ -37,10 +37,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // actualizaciones simultaneas no se interbloqueen ni degraden al ultimo ADMIN.
     // Bloquear el conjunto completo siempre (y no solo la cuenta objetivo) evita
     // la carrera en la que la cuenta cambia de rol entre la lectura y el bloqueo.
-    // La tabla solo tiene PK y uk_username, asi que MariaDB recorre el indice
+    // La tabla solo tiene PK y uk_username, asi que MySQL recorre el indice
     // primario y adquiere los bloqueos en el orden del ORDER BY.
-    // SQL nativo a proposito: Hibernate 7 genera "FOR UPDATE OF <alias>" en HQL
-    // y MariaDB no acepta esa clausula (error de sintaxis).
+    // SQL nativo a proposito: se usa un FOR UPDATE simple en lugar del
+    // "FOR UPDATE OF <alias>" de HQL.
     @Query(value = "SELECT * FROM usuarios WHERE id = :id OR (rol = 'ADMIN' AND activo = 1) "
             + "ORDER BY id ASC FOR UPDATE", nativeQuery = true)
     List<Usuario> bloquearUsuarioYAdminsActivos(@Param("id") Long id);
