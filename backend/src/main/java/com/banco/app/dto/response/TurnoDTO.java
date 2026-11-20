@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 // - categoriaOriginalNombre es la instantanea historica guardada al emitir,
 //   nunca el nombre actual del catalogo.
 // - preferenteOriginal sale de la categoria; envejecido y preferenteEfectivo
-//   se calculan con la hora del servidor y el umbral vigente del servicio.
 // - conjuntoEfectivo usa los valores del contrato:
 //   PREFERENTE | PREFERENTE_ENVEJECIDO | REGULAR.
 // - identificadorCliente solo viaja en respuestas protegidas por JWT.
@@ -66,7 +65,16 @@ public class TurnoDTO {
         this.categoriaOriginalNombre = turno.getCategoriaNombreSnapshot();
 
         boolean preferente = categoria != null && Boolean.TRUE.equals(categoria.getPreferente());
-        long esperaMinutos = Duration.between(turno.getFechaIngreso(), ahora).toMinutes();
+
+        LocalDateTime finEspera = ahora;
+        if (turno.getEstado() != EstadoTurno.EN_ESPERA) {
+            if (turno.getFechaLlamado() != null) {
+                finEspera = turno.getFechaLlamado();
+            } else if (turno.getFechaCancelacionAusencia() != null) {
+                finEspera = turno.getFechaCancelacionAusencia();
+            }
+        }
+        long esperaMinutos = Duration.between(turno.getFechaIngreso(), finEspera).toMinutes();
         boolean envejecido = !preferente && esperaMinutos >= umbralEnvejecimientoMin;
 
         this.preferenteOriginal = preferente;
