@@ -96,6 +96,7 @@ Para volver al estado inicial, con el backend detenido, se borra la base y se im
 - **Swagger UI**: `http://localhost:8080/swagger-ui.html`. Para los endpoints protegidos, pegar el token del login con el botón **Authorize**. El contrato en JSON está en `/v3/api-docs`.
 - **Postman**: colección `postman/collections/Turnero con Prioridades — API`, con la variable `baseUrl` (`http://localhost:8080`). El login guarda el JWT en `{{token}}`. La colección crea servicios, módulos, usuarios y turnos de prueba, que después aparecen en la aplicación.
 - **Documentos**: contrato de endpoints en `docs/Endpoints - Proyecto Turnero con Prioridades.xlsx` y reglas funcionales en `docs/Documentación Proyecto Turnero con Prioridades.docx`.
+- **Evidencias de ejecución**: [`docs/evidencias/`](docs/evidencias/README.md) tiene el reporte de resultados esperados y obtenidos de P01 a P12, con los logs de la colección de Postman y de JUnit y capturas de cada ejecución.
 
 Pruebas automáticas (las del backend usan H2 en memoria y no necesitan MySQL):
 
