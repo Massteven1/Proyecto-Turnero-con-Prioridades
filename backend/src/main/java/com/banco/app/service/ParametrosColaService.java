@@ -14,10 +14,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 // Parametros de cola por servicio (contrato GET/PUT /api/v1/parametros-cola).
 // El PUT bloquea primero el servicio y despues la fila de estado de cola,
-// respetando el orden global, y ajusta el contador de preferentes al nuevo
-// limite si la proporcion disminuye.
 @Service
 public class ParametrosColaService {
+
+    static final int PROPORCION_PREFERENTE = 3;
 
     private final EstadoColaServicioRepository estadoColaServicioRepository;
     private final ServicioRepository servicioRepository;
@@ -44,13 +44,11 @@ public class ParametrosColaService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "El servicio no tiene estado de cola configurado"));
 
-        estado.setUmbralEnvejecimientoMin(peticion.getUmbralEnvejecimientoMin());
-        estado.setProporcionPreferente(peticion.getProporcionPreferente());
 
-        // Si la nueva proporcion es menor que el contador vigente, se reajusta
-        // al nuevo maximo (regla del contrato)
-        if (estado.getContadorPreferentes() > peticion.getProporcionPreferente()) {
-            estado.setContadorPreferentes(peticion.getProporcionPreferente());
+        estado.setUmbralEnvejecimientoMin(peticion.getUmbralEnvejecimientoMin());
+        estado.setProporcionPreferente(PROPORCION_PREFERENTE);
+        if (estado.getContadorPreferentes() > PROPORCION_PREFERENTE) {
+            estado.setContadorPreferentes(PROPORCION_PREFERENTE);
         }
 
         estadoColaServicioRepository.save(estado);

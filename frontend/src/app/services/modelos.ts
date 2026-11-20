@@ -115,7 +115,6 @@ export interface EstadoCola {
 
 export interface ParametrosCola {
   umbralEnvejecimientoMin: number;
-  proporcionPreferente: number;
 }
 
 export interface RegistroTurno {

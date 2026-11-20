@@ -8,11 +8,9 @@ import { EstadoCola, ParametrosCola } from '../../services/modelos';
 
 interface Borrador {
   umbral: string;
-  proporcion: string;
 }
 
 // Parámetros de cola por servicio (HU-04): umbral de envejecimiento (1 a 240
-// minutos, 15 por defecto) y proporción N:1 (1 a 10, 3 por defecto).
 @Component({
   selector: 'app-parametros',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,8 +35,8 @@ interface Borrador {
       <div>
         <dt>Proporción preferentes a regular</dt>
         <dd>
-          Cuántos preferentes seguidos se llaman antes de dar paso a un regular, cuando hay de ambos en espera. Entre 1
-          y 10.
+          Fija en 3 a 1: tras tres preferentes seguidos se llama un regular, cuando hay de ambos en espera. No se
+          configura.
         </dd>
       </div>
     </dl>
@@ -87,21 +85,7 @@ interface Borrador {
                       (input)="editar(p.servicioId, 'umbral', $any($event.target).value)"
                     />
                   </td>
-                  <td>
-                    <label class="solo-lector" [for]="'proporcion-' + p.servicioId">Proporción para {{ p.servicioNombre }}</label>
-                    <span class="proporcion-campo">
-                      <input
-                        class="entrada entrada--chica entrada--numero"
-                        type="number"
-                        min="1"
-                        max="10"
-                        [id]="'proporcion-' + p.servicioId"
-                        [value]="valor(p).proporcion"
-                        (input)="editar(p.servicioId, 'proporcion', $any($event.target).value)"
-                      />
-                      a 1
-                    </span>
-                  </td>
+                  <td class="sin-salto">{{ p.proporcionPreferente }} a 1 <span class="texto-tenue">(fija)</span></td>
                   <td class="acciones">
                     @if (errorFila(p); as e) {
                       <span class="campo__error">{{ e }}</span>
@@ -124,9 +108,6 @@ interface Borrador {
             </tbody>
           </table>
         </div>
-        <p class="texto-chico texto-tenue tabla-nota">
-          Si reduces la proporción y el contador actual la supera, el sistema lo ajusta al nuevo máximo.
-        </p>
       }
     </section>
   `,
@@ -140,7 +121,7 @@ interface Borrador {
     }
     .glosario dt { font-weight: 700; }
     .glosario dd { margin: 0.2rem 0 0; color: var(--tinta-suave); font-size: var(--t-s); }
-    .proporcion-campo { display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+    .sin-salto { white-space: nowrap; }
     .acciones .campo__error { display: block; margin-bottom: 0.25rem; }
   `,
 })
@@ -163,7 +144,6 @@ export class Parametros implements OnInit {
     return (
       this.borradores()[p.servicioId] ?? {
         umbral: String(p.umbralEnvejecimientoMin),
-        proporcion: String(p.proporcionPreferente),
       }
     );
   }
@@ -175,21 +155,18 @@ export class Parametros implements OnInit {
   }
 
   protected errorFila(p: EstadoCola): string | null {
-    const { umbral, proporcion } = this.leer(p);
+    const umbral = this.leer(p);
     if (!Number.isInteger(umbral) || umbral < 1 || umbral > 240) return 'Espera entre 1 y 240 minutos.';
-    if (!Number.isInteger(proporcion) || proporcion < 1 || proporcion > 10) return 'Proporción entre 1 y 10.';
     return null;
   }
 
   protected cambio(p: EstadoCola): boolean {
-    const { umbral, proporcion } = this.leer(p);
-    return umbral !== p.umbralEnvejecimientoMin || proporcion !== p.proporcionPreferente;
+    return this.leer(p) !== p.umbralEnvejecimientoMin;
   }
 
   protected async guardar(p: EstadoCola): Promise<void> {
     if (!this.cambio(p) || this.errorFila(p)) return;
-    const { umbral, proporcion } = this.leer(p);
-    const peticion: ParametrosCola = { umbralEnvejecimientoMin: umbral, proporcionPreferente: proporcion };
+    const peticion: ParametrosCola = { umbralEnvejecimientoMin: this.leer(p) };
     this.guardando.set(p.servicioId);
     try {
       const actualizado = await firstValueFrom(this.api.actualizarParametros(p.servicioId, peticion));
@@ -208,9 +185,8 @@ export class Parametros implements OnInit {
     }
   }
 
-  private leer(p: EstadoCola): { umbral: number; proporcion: number } {
-    const v = this.valor(p);
-    return { umbral: Number(v.umbral), proporcion: Number(v.proporcion) };
+  private leer(p: EstadoCola): number {
+    return Number(this.valor(p).umbral);
   }
 
   private async cargar(): Promise<void> {
